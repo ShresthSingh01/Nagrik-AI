@@ -1,0 +1,30 @@
+{
+  "LITERAL": {
+    "summary": "The page presents a declaration statement where the applicant confirms the accuracy of the information furnished in the application. It warns about the legal repercussions of furnishing false or incorrect details, including rejection of the application and penal action under the Indian Penal Code.",
+    "explanation": "This is a legally binding statement where you must confirm that all the details you have provided in the application are accurate. If any information is found to be false, your application may be rejected, and you could face legal consequences under Indian law.",
+    "action": "1. Read the declaration carefully. 2. If you agree with the statement, sign the declaration in the space provided. 3. Ensure that the information you have provided in the application is accurate to avoid legal consequences.",
+    "fields": []
+  },
+  "SIMPLE": {
+    "summary": "The page contains a declaration statement that the applicant must sign, confirming the truth of the provided information and acknowledging penalties for false information.",
+    "explanation": "This page is a legal warning. You must read it carefully before signing. By signing, you agree that all details you provided are true. If any information is false, your application may be rejected or cancelled. You could also face legal action under Indian law.",
+    "action": "1. Read the declaration carefully.\n2. Sign only if all information is true and correct.\n3. Understand the consequences of false information.",
+    "fields": []
+  },
+  "ULTRA_BASIC": {
+    "summary": "This page contains a declaration statement that the information given is true. Signing this page is mandatory for the application to be valid.",
+    "explanation": "You must read and sign this page. It says your details are correct. If not, your application may be rejected or you may face legal trouble.",
+    "action": "Read the declaration carefully. Sign your name at the end. Ask someone to help if confused.",
+    "fields": [
+      {
+        "field_name": "signature",
+        "what_to_fill": "Sign your name here.",
+        "why_it_matters": "This confirms you agree with the declaration.",
+        "example": "Write your name like 'Ram Singh'.",
+        "source": "document_text",
+        "retrieval_score": null,
+        "bbox": null
+      }
+    ]
+  }
+}

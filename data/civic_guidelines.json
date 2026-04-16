@@ -1,0 +1,193 @@
+[
+  {
+    "title": "Samagra ID (MP)",
+    "keywords": [
+      "samagra",
+      "sssmid",
+      "member id",
+      "family id",
+      "parivar id",
+      "समग्र"
+    ],
+    "description": "Samagra ID is the most important 9-digit (individual) or 8-digit (family) ID for all Madhya Pradesh government services. It is mandatory for linking Aadhaar and accessing any state scheme.",
+    "what_to_ask_user": "Ask the user to provide their 9-digit Samagra Member ID for individual services or the 8-digit Family ID for family-based benefits."
+  },
+  {
+    "title": "Ladli Behna Yojana (MP)",
+    "keywords": [
+      "ladli behna",
+      "cm ladli",
+      "women assistance",
+      "लाड़ली बहना",
+      "₹1250"
+    ],
+    "description": "A flagship MP government scheme providing monthly financial assistance to women aged 21-60. Key requirements include MP domicile, non-income tax payer status, and active e-KYC.",
+    "what_to_ask_user": "Note that e-KYC must be completed on the Samagra portal and the bank account must be Aadhaar-linked (DBT enabled)."
+  },
+  {
+    "title": "Sambal Card (MP)",
+    "keywords": [
+      "sambal",
+      "shramik",
+      "unorganized labor",
+      "जनकल्याण",
+      "mukhya mantri jan kalyan"
+    ],
+    "description": "The Sambal Yojana (Jan Kalyan Sambal) provides support to unorganized workers in MP for maternity, education, health, and funeral expenses. A valid Samagra ID is required for application.",
+    "what_to_ask_user": "Remind the user that the Sambal card must be renewed and verified by local authorities to stay active."
+  },
+  {
+    "title": "MP Domicile (Sthanyi Niwas)",
+    "keywords": [
+      "domicile",
+      "sthanyi niwas",
+      "resident of mp",
+      "निवास प्रमाण पत्र",
+      "bonafide"
+    ],
+    "description": "MP Resident Certificate is required for local job reservations and education quotas in Madhya Pradesh. In MP, a digital certificate is preferred, and the Tehsildar is the issuing authority.",
+    "what_to_ask_user": "Check if the user has a digitally signed certificate from the MP e-District portal, as old manual ones may be rejected."
+  },
+  {
+    "title": "Madhya Pradesh Income Certificate",
+    "keywords": [
+      "income",
+      "annual income",
+      "आय प्रमाण पत्र",
+      "tehsildar",
+      "self-declaration"
+    ],
+    "description": "Required for scholarships and EWS benefits. In MP, income certificates are often issued based on self-declaration and are valid for 3 years for specific MP-only schemes.",
+    "what_to_ask_user": "For most MP schemes, a self-declaration of income is sufficient if the family has a valid Samagra ID."
+  },
+  {
+    "title": "Ladli Laxmi Yojana (MP)",
+    "keywords": [
+      "ladli laxmi",
+      "girl child",
+      "scholarship",
+      "लाड़ली लक्ष्मी"
+    ],
+    "description": "Educational and financial security scheme for girl children born in MP after 2006. Provides staggered payments and a final maturity amount at age 21.",
+    "what_to_ask_user": "Ensure the girl child is registered within one year of birth for maximum benefits."
+  },
+  {
+    "title": "Voter ID (EPIC - MP)",
+    "keywords": [
+      "voter id",
+      "epic",
+      "matdata",
+      "pehchan patra",
+      "निर्वाचन"
+    ],
+    "description": "MP election identification proof. Mandatory for casting votes in State and National elections. Form 6 is used for new MP voters, and Form 8 for address changes within the state.",
+    "what_to_ask_user": "Ask the user to check their name in the MP electoral roll via the NVSP portal or Voter Helpline app."
+  },
+  {
+    "title": "MP e-Uparjan (Farmer Reg)",
+    "keywords": [
+      "uparjan",
+      "msp",
+      "kisan",
+      "wheat procurement",
+      "ई-उपार्जन"
+    ],
+    "description": "The portal for MP farmers to register for selling Rabi and Kharif crops at Minimum Support Price (MSP). Land record (Khasra) linking is mandatory.",
+    "what_to_ask_user": "Make sure the mobile number linked to Samagra is active to receive the procurement SMS (Message)."
+  },
+  {
+    "title": "Kanya Vivah Yojana (MP)",
+    "keywords": [
+      "kanya vivah",
+      "marriage assistance",
+      "कन्या विवाह",
+      "nikah"
+    ],
+    "description": "Financial aid for the marriage of daughters from poor, widowed, or divorced families in Madhya Pradesh.",
+    "what_to_ask_user": "Documents including Samagra ID, BPL card, and age proof (18+ for bride, 21+ for groom) are required."
+  },
+  {
+    "title": "LPG Gas (Ujjwala/General)",
+    "keywords": [
+      "lpg",
+      "gas",
+      "cylinder",
+      "subsidy",
+      "gas connection"
+    ],
+    "description": "Subsidized gas connection rules. Under MP Government rules, Ladli Behna beneficiaries often get additional cylinder subsidies (approx ₹450 per refill).",
+    "what_to_ask_user": "Ask the user to check if their LPG connection is linked with their Samagra ID for the MP Gas Subsidy."
+  },
+  {
+    "title": "Caste Certificate (MP)",
+    "keywords": [
+      "caste",
+      "sc",
+      "st",
+      "obc",
+      "jati",
+      "जाति प्रमाण पत्र"
+    ],
+    "description": "Caste certificates in MP are issued by the Sub-Divisional Officer. Non-Creamy Layer status for OBCs must be updated every 3 years (MP Specific rule).",
+    "what_to_ask_user": "Remind users that caste certificates issued by MP are valid only within the state unless specified as a Central Government format."
+  },
+  {
+    "title": "Birth Registration (MP Window)",
+    "keywords": [
+      "birth",
+      "death",
+      "registration",
+      "janm",
+      "मृत्यु"
+    ],
+    "description": "Registration of birth/death is mandatory within 21 days in MP. Beyond 21 days, a late fee and additional verification from a magistrate/SDO are required.",
+    "what_to_ask_user": "Always try to register birth at the hospital or local municipality/gram panchayat within the first 3 weeks."
+  },
+  {
+    "title": "Aadhaar Card (UIDAI)",
+    "keywords": [
+      "aadhar",
+      "aadhaar",
+      "uid",
+      "आधार",
+      "identity"
+    ],
+    "description": "12-digit unique identity. Mandatory for Samagra e-KYC. Never share the Full OTP or the full Aadhaar number; use masked Aadhaar where possible.",
+    "what_to_ask_user": "Inform the user that their mobile number must be linked to Aadhaar for any online MP government service."
+  },
+  {
+    "title": "PAN Card (Income Tax)",
+    "keywords": [
+      "pan",
+      "income tax",
+      "taxpayer",
+      "स्थायी खाता संख्या"
+    ],
+    "description": "10-digit alphanumeric ID. Mandatory for transactions above ₹50,000 and for opening a bank account in India. Not mandatory for Samagra but recommended for business.",
+    "what_to_ask_user": "Check that the name on the PAN card matches the name on Aadhaar and Samagra exactly."
+  },
+  {
+    "title": "MP Ration Card (NFSA)",
+    "keywords": [
+      "ration",
+      "ration card",
+      "bpl",
+      "antyodaya",
+      "खाद्य पर्ची"
+    ],
+    "description": "MP Food Security (NFSA) eligible households get 'Khadya Parchi' (e-ration slip). Selection is based on 25+ categories including labor, caste, and special needs.",
+    "what_to_ask_user": "Verify that all family members are listed in the Samagra Family ID to ensure they receive their 5kg monthly grain quota."
+  },
+  {
+    "title": "Self-Declaration (MP SV-Ghoshna)",
+    "keywords": [
+      "self-declaration",
+      "declaration",
+      "affidavit",
+      "swaghoshna",
+      "स्व-घोषणा"
+    ],
+    "description": "In Madhya Pradesh, most services no longer require an affidavit on stamp paper; a simple self-declaration (Swa-ghoshna) is legally valid for income and domicile.",
+    "what_to_ask_user": "Tell the user they do not need to visit a court for most certificates—a signed self-declaration on plain paper is enough."
+  }
+]

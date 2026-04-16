@@ -1,0 +1,12 @@
+{
+  "project_name": "NagrikAI",
+  "version": "0.1.0",
+  "workflow": {
+    "discuss_mode": "discuss",
+    "text_mode": false,
+    "max_discuss_passes": 3
+  },
+  "preferences": {
+    "vendor_philosophy": "standard"
+  }
+}
