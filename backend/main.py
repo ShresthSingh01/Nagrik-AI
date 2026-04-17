@@ -16,7 +16,7 @@ from .field_extractor import extract_fields_from_markdown
 from .llm import simplify_page, ask_ai
 from .ocr import OCRException, run_ocr, LowConfidenceException
 from .pageindex_tree import build_pageindex_tree
-from .rag import load_guidelines, retrieve_context, retrieve_document_context, retrieve_field_context, retrieve_field_context_batch
+from .rag import load_guidelines, retrieve_context, retrieve_document_context, retrieve_field_context_batch
 from .schema import SimplificationLevel
 from .tts import text_to_speech
 
@@ -350,9 +350,10 @@ async def process_ask_ai(
     page_context: str = Form(""),
     page_summary: str = Form(""),
     guideline_context: str = Form(""),
+    field_context: str = Form(""),
     language: str = Form("English"),
 ):
-    answer_data = await asyncio.to_thread(ask_ai, question, page_context, page_summary, guideline_context, language)
+    answer_data = await asyncio.to_thread(ask_ai, question, page_context, page_summary, guideline_context, field_context, language)
     return JSONResponse(answer_data)
 
 @app.post("/api/tts-field")

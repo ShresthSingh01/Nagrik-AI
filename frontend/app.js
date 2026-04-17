@@ -1005,13 +1005,15 @@ async function handleAIQuestion(question) {
     let contextMd = "";
     let contextSummary = "";
     let contextGuidelines = "";
+    let fieldContext = "";
     const activeBtn = document.querySelector(".tab-btn.active");
     const currentDocId = resultsSection.dataset.currentId;
     
     if (activeBtn && currentDocId) {
         const pageText = activeBtn.textContent.trim();
         const pageNumMatch = pageText.match(/\d+/);
-        const pageNum = pageNumMatch ? parseInt(pageNumMatch[0]) : 1;
+        // Correct off-by-one: UI is 1-indexed, data is 0-indexed
+        const pageNum = pageNumMatch ? parseInt(pageNumMatch[0]) - 1 : 0;
         
         const history = Storage.getAll();
         const currentDoc = history.find(d => d.id === currentDocId);
@@ -1020,10 +1022,18 @@ async function handleAIQuestion(question) {
             const pageData = currentDoc.pages.find(p => p.page === pageNum);
             if (pageData) {
                 contextMd = pageData.original_markdown || ""; 
-                contextSummary = pageData.page_summary || "";
+                contextSummary = (currentDoc.document_purpose ? currentDoc.document_purpose + "\n" : "") + (pageData.page_summary || "");
+                
+                // Format guidelines
                 if (pageData.retrieved_guidelines && pageData.retrieved_guidelines.length > 0) {
-                    contextGuidelines = pageData.retrieved_guidelines.join("\n- ");
-                    contextGuidelines = "- " + contextGuidelines;
+                    contextGuidelines = "- " + pageData.retrieved_guidelines.join("\n- ");
+                }
+
+                // Format simplified field guide (Critical fix for "I don't know" errors)
+                if (pageData.fields && pageData.fields.length > 0) {
+                    fieldContext = pageData.fields.map(f => 
+                        `- [${f.field_name || "Field"}]: ${f.what_to_fill || "No instruction"} (Reason: ${f.why_it_matters || "Required"})`
+                    ).join("\n");
                 }
             }
         }
@@ -1037,6 +1047,7 @@ async function handleAIQuestion(question) {
         formData.append("page_context", contextMd);
         formData.append("page_summary", contextSummary);
         formData.append("guideline_context", contextGuidelines);
+        formData.append("field_context", fieldContext);
         formData.append("language", lang === "hi" ? "Hindi" : "English");
 
 

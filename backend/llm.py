@@ -172,40 +172,50 @@ If it looks mostly accurate and didn't invent non-existent fields, passed=true. 
 
 
 # --- 🌟 Upgrade 1: Ask AI Chatbot ---
-def ask_ai(question: str, page_markdown: str, page_summary: str, guideline_context: str = "", language: str = "English") -> dict[str, Any]:
-    system_prompt = f"""You are a helpful assistant guiding a user through a government form. The user is speaking {language}. Respond ONLY in {language}. 
-    
+def ask_ai(question: str, page_markdown: str, page_summary: str, guideline_context: str = "", field_context: str = "", language: str = "English") -> dict[str, Any]:
+    system_prompt = f"""You are a helpful Nagrik Assistant guiding a user through a government document. The user is speaking {language}. Respond ONLY in {language}.
+
+    KNOWLEDGE BASE:
+    - You have access to: 1) Raw Page Text, 2) Simplified Field Guide, and 3) Civic Guidelines.
+    - If a user asks about a specific term (like "Pokhara", "Name", "ID"), first check if that word exists as a field label or within the document text.
+    - If it's a field in the document, explain it using the Simplified Field Guide.
+    - You may use your general knowledge ONLY to explain or clarify terms that ARE present in the document.
+
     STRICT GROUNDING RULES:
-    1. Answer ONLY based on the provided Page Context and Civic Guidelines.
-    2. If the answer is not contained within the provided text, state that you do not have enough information from the document to answer.
-    3. Do NOT provide general advice, stories, or jokes.
-    4. Keep answers brief (max 3 sentences) and actionable.
-    
-    Output strictly JSON: {{"answer": "your answer here"}}. ALL fields must be in {language}."""
-    
+    1. If the query is completely unrelated to the document or government forms, politely say you are specialized in this document.
+    2. Do NOT hallucinate fields that aren't there.
+    3. Keep answers brief (max 3 sentences) and actionable.
+
+    Output strictly JSON: {{"answer": "your answer here"}}. ALL text must be in {language}."""
+
     user_prompt = f"""
-Language for response: {language}
-Current Context Summary: {page_summary}
+Language: {language}
+Document Summary: {page_summary}
+
+--- SIMPLIFIED FIELD GUIDE (Instructions for fields) ---
+{field_context if field_context else "No specific field instructions available."}
 
 --- CIVIC GUIDELINES (Official Rules) ---
-{guideline_context if guideline_context else "No specific guidelines available for this page."}
+{guideline_context if guideline_context else "No specific guidelines."}
 
---- PAGE TEXT (OCR Result) ---
-{page_markdown[:2000]}
+--- DOCUMENT CONTENT (OCR) ---
+{page_markdown[:2500]}
 
 --- USER QUESTION ---
 {question}
 
+Instructions: Based on the document content and field guide above, answer the user's question. If the user mentions a specific label they see, find that label in the text and explain its purpose.
+
 Return strictly JSON in {language}: {{"answer": "your answer here"}}
 """
-    # Set temperature to 0.0 for maximum grounding/stability
-    result = _mistral_call(system_prompt, user_prompt, temperature=0.0)
+    # Set temperature to 0.1 for a bit more flexibility while staying grounded
+    result = _mistral_call(system_prompt, user_prompt, temperature=0.1)
     if result and "answer" in result:
         return result
-    
+
     fallback_msgs = {
-        "Hindi": "क्षमा करें, मैं केवल प्रस्तुत दस्तावेज़ के आधार पर आपके प्रश्न का उत्तर दे सकता हूँ। मुझे इस बारे में जानकारी नहीं मिली।",
-        "English": "I'm sorry, I can only answer questions based on the provided document and guidelines. I couldn't find information for your request."
+        "Hindi": "क्षमा करें, मैं केवल प्रस्तुत दस्तावेज़ और गाइड के आधार पर आपके प्रश्न का उत्तर दे सकता हूँ। मुझे इस बारे में जानकारी नहीं मिली।",
+        "English": "I'm sorry, I can only answer questions based on the provided document, guide, and guidelines. I couldn't find information for your request."
     }
     return {"answer": fallback_msgs.get(language, fallback_msgs["English"])}
 
