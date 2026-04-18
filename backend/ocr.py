@@ -119,9 +119,12 @@ def run_ocr(file_path: str, filename: str | None = None, pages: list[int] | None
         # Confidence Check: If markdown is exceptionally short and isn't just an image, it's likely a bad scan
         # Include Devanagari (Hindi/Marathi), Bengali, Tamil, Telugu, Kannada, Malayalam, Gujarati, Odia
         clean_text = re.sub(r'[^a-zA-Z0-9\u0900-\u097F\u0980-\u09FF\u0A00-\u0A7F\u0B00-\u0B7F\u0B80-\u0BFF\u0C00-\u0C7F\u0C80-\u0CFF\u0D00-\u0D7F]', '', markdown)
-        if len(clean_text) < 20 and not p.get("images"):
-            logger.warning(f"Low confidence on page {index}. Text too sparse.")
-            raise LowConfidenceException("The image is too blurry or unreadable. Please retake the photo.")
+        logger.info(f"[Nagrik] Page {index} extracted text length: {len(clean_text)}")
+        
+        # Lowered threshold from 20 to 5 to handle sparse forms/stamps
+        if len(clean_text) < 5 and not p.get("images"):
+            logger.warning(f"Low confidence on page {index}. Text too sparse ({len(clean_text)} chars).")
+            raise LowConfidenceException("The image is too blurry or unreadable. Please retake the photo in better lighting.")
         
         blocks = _parse_markdown_blocks(markdown)
         

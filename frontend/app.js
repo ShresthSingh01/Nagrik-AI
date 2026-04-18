@@ -715,6 +715,7 @@ processBtn.onclick = async () => {
 
         const docRecord = {
           id: uuidv4(),
+          job_id: job_id, // Store job_id for AI Chatbot structural context
           timestamp: Date.now(),
           ...job.result
         };
@@ -1049,6 +1050,15 @@ async function handleAIQuestion(question) {
         formData.append("guideline_context", contextGuidelines);
         formData.append("field_context", fieldContext);
         formData.append("language", lang === "hi" ? "Hindi" : "English");
+        
+        // Pass job_id and session_id for cross-page memory
+        const currentDoc = Storage.getAll().find(d => d.id === currentDocId);
+        if (currentDoc && currentDoc.job_id) {
+            formData.append("job_id", currentDoc.job_id);
+        }
+        
+        // Use a simple device-fixed session ID for now, or per-document session
+        formData.append("session_id", "session_" + (currentDocId || "global").substring(0, 8));
 
 
         const res = await fetch("/api/ask", { method: "POST", body: formData });

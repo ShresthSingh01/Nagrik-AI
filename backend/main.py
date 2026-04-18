@@ -20,9 +20,13 @@ from .rag import load_guidelines, retrieve_context, retrieve_document_context, r
 from .schema import SimplificationLevel
 from .tts import text_to_speech
 
+from .session_memory import SessionMemory
+from .document_graph import DocumentGraph, GraphNode
 from .memory import DocumentMemory
 from .utils import ensure_dir, safe_read_json
 from .validators import validate_fields
+
+_GRAPHS: dict[str, DocumentGraph] = {}
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 FRONTEND_DIR = BASE_DIR / "frontend"
@@ -108,6 +112,7 @@ async def _process_page_async(
     language: str,
     tree: Any,
     guidelines: Any,
+    document_context: dict[str, Any],
     level: SimplificationLevel,
     lightweight: bool = False,
     user_profile: str = "",
@@ -127,6 +132,9 @@ async def _process_page_async(
     context = await asyncio.to_thread(
         retrieve_context, query, tree, guidelines, page_num, lightweight
     )
+
+    # Blend global document guidance with local page guidance.
+    context["document_guideline_hits"] = document_context.get("guideline_hits", [])
 
     # NEW: Field-level RAG for Surgical Grounding (Hardening 1 - BATCH OPTIMIZED)
     field_retrievals = {}
@@ -193,14 +201,36 @@ async def _run_analysis_job(
 
         # Redundant slicing removed as OCR is now targeted
 
-        print(f"[Nagrik] Building PageIndex tree...")
+        print(f"[Nagrik] Building DocumentGraph (Cross-Page Memory Ready)...")
+        graph = DocumentGraph()
+        graph.build(pages)
+        _GRAPHS[job_id] = graph
+        
+        # Legacy tree for backward compatibility if needed, but graph is primary
         tree = build_pageindex_tree(pages)
         guidelines = load_guidelines()
+
+        print("[Nagrik] Retrieving document-level guidance...")
+        document_context = await asyncio.to_thread(
+            retrieve_document_context,
+            tree,
+            guidelines,
+            lightweight,
+        )
 
         # Parallelize Page Processing
         print(f"[Nagrik] Starting parallel analysis for {len(pages)} pages...")
         tasks = [
-            _process_page_async(page, language, tree, guidelines, simplification_level, lightweight, user_profile)
+            _process_page_async(
+                page,
+                language,
+                tree,
+                guidelines,
+                document_context,
+                simplification_level,
+                lightweight,
+                user_profile,
+            )
             for page in pages
         ]
         page_results = list(await asyncio.gather(*tasks))
@@ -266,12 +296,16 @@ async def _run_analysis_job(
         print(f"[Nagrik] Job Low Confidence: {e}")
         _update_job_status(job_id, "failed", error=str(e))
     except OCRException as e:
-        print(f"[Nagrik] Job OCR Error: {e}")
-        _update_job_status(
-            job_id,
-            "failed",
-            error="Could not read the document clearly. Please retake the photo in better lighting.",
-        )
+        error_msg = str(e)
+        print(f"[Nagrik] Job OCR Error: {error_msg}")
+        # Keep user-friendly error but append technical hint if appropriate
+        friendly_error = "Could not read the document clearly. Please retake the photo in better lighting."
+        if "401" in error_msg or "403" in error_msg:
+            friendly_error = "Technical Error: API Key Authorization failed. Please check your Mistral settings."
+        elif "429" in error_msg:
+            friendly_error = "Server is busy. Please wait a few moments and try again."
+        
+        _update_job_status(job_id, "failed", error=friendly_error)
     except asyncio.TimeoutError:
         print("[Nagrik] Job Timeout Error")
         _update_job_status(
@@ -287,11 +321,13 @@ async def _run_analysis_job(
             error="Processing ran out of memory. Please upload a smaller file (up to 10 MB).",
         )
     except Exception as e:
-        print(f"[Nagrik] Job Error: {e}")
+        import traceback
+        error_detail = traceback.format_exc()
+        print(f"[Nagrik] Job Error: {error_detail}")
         _update_job_status(
             job_id,
             "failed",
-            error="Processing failed unexpectedly. Please retry once or upload a smaller image.",
+            error=f"Processing failed unexpectedly ({type(e).__name__}). Please retry once or upload a smaller image.",
         )
     finally:
         Path(tmp_path).unlink(missing_ok=True)
@@ -352,8 +388,38 @@ async def process_ask_ai(
     guideline_context: str = Form(""),
     field_context: str = Form(""),
     language: str = Form("English"),
+    session_id: str = Form("default"),
+    job_id: str = Form(""),
 ):
-    answer_data = await asyncio.to_thread(ask_ai, question, page_context, page_summary, guideline_context, field_context, language)
+    from .rag import retrieve_expanded_context
+    
+    expanded_context = []
+    if job_id and job_id in _GRAPHS:
+        graph = _GRAPHS[job_id]
+        guidelines = load_guidelines()
+        rag_res = await asyncio.to_thread(retrieve_expanded_context, question, graph, guidelines)
+        expanded_context = rag_res.get("tree_hits", [])
+
+    answer_data = await asyncio.to_thread(
+        ask_ai, 
+        question, 
+        page_context, 
+        page_summary, 
+        guideline_context, 
+        field_context, 
+        language,
+        session_id=session_id,
+        expanded_context=expanded_context
+    )
+    
+    # Update Session Memory
+    SessionMemory.update_session(
+        session_id, 
+        last_query=question, 
+        last_answer=answer_data.get("answer"),
+        cited_pages=answer_data.get("pages_cited", [])
+    )
+    
     return JSONResponse(answer_data)
 
 @app.post("/api/tts-field")

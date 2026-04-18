@@ -171,26 +171,47 @@ If it looks mostly accurate and didn't invent non-existent fields, passed=true. 
     return VerificationResult(passed=True, reason="Verification bypassed due to API error")
 
 
+from .session_memory import SessionMemory
+
 # --- 🌟 Upgrade 1: Ask AI Chatbot ---
-def ask_ai(question: str, page_markdown: str, page_summary: str, guideline_context: str = "", field_context: str = "", language: str = "English") -> dict[str, Any]:
+def ask_ai(
+    question: str, 
+    page_markdown: str, 
+    page_summary: str, 
+    guideline_context: str = "", 
+    field_context: str = "", 
+    language: str = "English",
+    session_id: str = "default",
+    expanded_context: list[str] = None
+) -> dict[str, Any]:
+    session_context = SessionMemory.get_context_for_llm(session_id)
+    
     system_prompt = f"""You are a helpful Nagrik Assistant guiding a user through a government document. The user is speaking {language}. Respond ONLY in {language}.
 
     KNOWLEDGE BASE:
-    - You have access to: 1) Raw Page Text, 2) Simplified Field Guide, and 3) Civic Guidelines.
-    - If a user asks about a specific term (like "Pokhara", "Name", "ID"), first check if that word exists as a field label or within the document text.
-    - If it's a field in the document, explain it using the Simplified Field Guide.
-    - You may use your general knowledge ONLY to explain or clarify terms that ARE present in the document.
+    - You have access to: 1) Raw Page Text, 2) Structural Context (linked sections), 3) Simplified Field Guide, and 4) Civic Guidelines.
+    - If a user asks about a specific term (like "Pokhara", "Name", "ID"), check ALL provided context.
+    - SESSION MEMORY: Use the 'PREVIOUS' dialogue below to resolve references like "this", "that", or "same as before".
 
     STRICT GROUNDING RULES:
     1. If the query is completely unrelated to the document or government forms, politely say you are specialized in this document.
     2. Do NOT hallucinate fields that aren't there.
     3. Keep answers brief (max 3 sentences) and actionable.
+    4. CITATION: If you use information from multiple pages, mention them (e.g., "See Page 1 and 3").
 
-    Output strictly JSON: {{"answer": "your answer here"}}. ALL text must be in {language}."""
+    Output strictly JSON: {{"answer": "your answer here", "pages_cited": [1, 3]}}. ALL text must be in {language}."""
 
+    # Combine provided contexts
+    context_blob = ""
+    if expanded_context:
+        context_blob = "\n\n--- DOCUMENT STRUCTURAL CONTEXT (Multi-page) ---\n" + "\n\n".join(expanded_context)
+    
     user_prompt = f"""
 Language: {language}
 Document Summary: {page_summary}
+
+--- SESSION MEMORY (Previous Turns) ---
+{session_context if session_context else "First turn of conversation."}
 
 --- SIMPLIFIED FIELD GUIDE (Instructions for fields) ---
 {field_context if field_context else "No specific field instructions available."}
@@ -198,15 +219,16 @@ Document Summary: {page_summary}
 --- CIVIC GUIDELINES (Official Rules) ---
 {guideline_context if guideline_context else "No specific guidelines."}
 
---- DOCUMENT CONTENT (OCR) ---
-{page_markdown[:2500]}
+--- DOCUMENT CONTENT (Current Page View) ---
+{page_markdown[:2000]}
+{context_blob}
 
 --- USER QUESTION ---
 {question}
 
-Instructions: Based on the document content and field guide above, answer the user's question. If the user mentions a specific label they see, find that label in the text and explain its purpose.
+Instructions: Based on the document content, structural context, and field guide above, answer the user's question. If the user mentions a specific label they see, find that label in the text and explain its purpose. 
 
-Return strictly JSON in {language}: {{"answer": "your answer here"}}
+Return strictly JSON in {language}: {{"answer": "your answer here", "pages_cited": [number, ...]}}
 """
     # Set temperature to 0.1 for a bit more flexibility while staying grounded
     result = _mistral_call(system_prompt, user_prompt, temperature=0.1)
@@ -269,6 +291,40 @@ def simplify_page(
 
     tree_hits = context.get("tree_hits", []) or []
     guideline_hits = context.get("guideline_hits", []) or []
+    document_guideline_hits = context.get("document_guideline_hits", []) or []
+
+    # Fuse page and document hits with priority to page-local relevance.
+    fused_guidelines_by_title: dict[str, dict[str, Any]] = {}
+    for hit in document_guideline_hits:
+        guideline = hit.get("guideline", {})
+        title = (guideline.get("title") or "").strip()
+        if not title:
+            continue
+        fused_guidelines_by_title[title] = {
+            "score": round(float(hit.get("score", 0.0)) * 0.75, 3),
+            "guideline": guideline,
+            "source_level": "document",
+        }
+
+    for hit in guideline_hits:
+        guideline = hit.get("guideline", {})
+        title = (guideline.get("title") or "").strip()
+        if not title:
+            continue
+        page_score = float(hit.get("score", 0.0))
+        existing = fused_guidelines_by_title.get(title)
+        if not existing or page_score >= float(existing.get("score", 0.0)):
+            fused_guidelines_by_title[title] = {
+                "score": round(page_score, 3),
+                "guideline": guideline,
+                "source_level": "page",
+            }
+
+    merged_guideline_hits = sorted(
+        fused_guidelines_by_title.values(),
+        key=lambda item: item.get("score", 0.0),
+        reverse=True,
+    )
 
     level_prompt = SIMPLIFICATION_PROMPTS.get(level, SIMPLIFICATION_PROMPTS[SimplificationLevel.SIMPLE])
 
@@ -379,7 +435,7 @@ Retrieved structural context:
 {json.dumps(tree_hits, ensure_ascii=False, indent=2)}
 
 Retrieved general guidelines:
-{json.dumps(guideline_hits, ensure_ascii=False, indent=2)}
+{json.dumps(merged_guideline_hits, ensure_ascii=False, indent=2)}
 """
 
     result = _mistral_call(system_prompt, user_prompt, temperature=0.1)
@@ -408,7 +464,11 @@ Retrieved general guidelines:
 
     # Inject internal metadata
     result["field_retrievals"] = field_retrievals
-    result["retrieved_guidelines"] = [g.get("title", "") for g in guideline_hits if g.get("title")]
+    result["retrieved_guidelines"] = [
+        g.get("guideline", {}).get("title", "")
+        for g in merged_guideline_hits
+        if g.get("guideline", {}).get("title")
+    ]
     
     # Validate against Pydantic schema
     try:
@@ -450,7 +510,11 @@ Retrieved general guidelines:
         out["original_markdown"] = page_markdown
 
         # NEW: Integrate verify_output (Fixing bypassed check from DOCUMENTATION.md)
-        guideline_titles = [g.get("title", "") for g in guideline_hits if g.get("title")]
+        guideline_titles = [
+            g.get("guideline", {}).get("title", "")
+            for g in merged_guideline_hits
+            if g.get("guideline", {}).get("title")
+        ]
         verification = verify_output(page_markdown, out, guideline_titles)
         if not verification.passed:
             logger.warning(f"[Page {page_num}] Verification failed: {verification.reason}")

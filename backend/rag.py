@@ -11,6 +11,7 @@ from chromadb.api.types import EmbeddingFunction, Documents, Embeddings
 
 from .config import settings
 from .pageindex_tree import best_tree_nodes
+from .document_graph import DocumentGraph
 from .utils import safe_read_json, score_overlap, get_embedding, ensure_dir
 
 logger = logging.getLogger(__name__)
@@ -169,6 +170,45 @@ def retrieve_context(query: str, tree: dict[str, Any], guidelines: Any, page_num
     
     return {
         "tree_hits": tree_hits,
+        "guideline_hits": guideline_hits,
+    }
+
+def retrieve_expanded_context(
+    query: str, 
+    graph: DocumentGraph, 
+    guidelines: Any, 
+    page_num: int | None = None
+) -> dict[str, Any]:
+    """
+    Advanced retrieval: find nodes and expand them using structural adjacency.
+    """
+    # 1. Structural search with expansion
+    expanded_tree_hits = graph.search(query, limit=settings.max_context_nodes)
+    
+    # 2. Page-level guideline retrieval (Base RAG)
+    collection = _get_collection()
+    res = collection.query(
+        query_texts=[query],
+        n_results=settings.max_guideline_hits
+    )
+    
+    guideline_hits = []
+    if res["ids"] and res["ids"][0]:
+        for i in range(len(res["ids"][0])):
+            distance = res["distances"][0][i]
+            meta = res["metadatas"][0][i]
+            score = max(0.0, 1.0 - distance)
+            if score > 0.1:
+                guideline_hits.append({
+                    "score": round(score, 3),
+                    "guideline": {
+                        "title": meta.get("title"),
+                        "description": meta.get("description")
+                    }
+                })
+    
+    return {
+        "tree_hits": expanded_tree_hits,
         "guideline_hits": guideline_hits,
     }
 
