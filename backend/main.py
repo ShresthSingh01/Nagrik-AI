@@ -6,17 +6,31 @@ import uuid
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile, BackgroundTasks
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, BackgroundTasks, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
+import logging
 from fastapi.staticfiles import StaticFiles
 
+logger = logging.getLogger("uvicorn.error")
+
 from .config import settings
+from .auth_utils import verify_token, create_access_token, verify_password, get_password_hash
+from fastapi.security import OAuth2PasswordBearer
 from .field_extractor import extract_fields_from_markdown
 from .llm import simplify_page, ask_ai
 from .ocr import OCRException, run_ocr, LowConfidenceException
 from .pageindex_tree import build_pageindex_tree
-from .rag import load_guidelines, retrieve_context, retrieve_document_context, retrieve_field_context_batch
+from .rag import (
+    load_guidelines, 
+    retrieve_context, 
+    retrieve_document_context, 
+    retrieve_field_context_batch,
+    index_document_chunks,
+    search_document_memory,
+    clear_memory_for_user,
+    clear_memory_for_job
+)
 from .schema import SimplificationLevel
 from .tts import text_to_speech
 
@@ -54,6 +68,21 @@ def startup_event():
     if settings.mistral_api_key:
         print("[Nagrik] Pre-embedding Civic Guidelines...")
         load_guidelines()
+    
+    # Initialize test user database if it doesn't exist or is empty
+    users_dir = BASE_DIR / "data"
+    users_path = users_dir / "users.json"
+    if not users_path.exists():
+        ensure_dir(users_dir)
+        # Default test user: 8888888888 / user123
+        default_users = {
+            "8888888888": {
+                "password_hash": "$2b$12$dhFx4SFlfSmWpiHghRPi.OaptNuhOB6SgAIcnaqCSzjybOwRC.JSm",
+                "full_name": "Test User"
+            }
+        }
+        with open(users_path, "w", encoding="utf-8") as f:
+            json.dump(default_users, f)
 
 @app.get("/")
 def root():
@@ -206,6 +235,10 @@ async def _run_analysis_job(
         graph.build(pages)
         _GRAPHS[job_id] = graph
         
+        # INDEX FOR SEMANTIC MEMORY (Phase 9)
+        # Offload the ChromaDB sync to a thread to keep analysis snappy
+        await asyncio.to_thread(index_document_chunks, job_id, filename, pages)
+        
         # Legacy tree for backward compatibility if needed, but graph is primary
         tree = build_pageindex_tree(pages)
         guidelines = load_guidelines()
@@ -265,11 +298,16 @@ async def _run_analysis_job(
         audio_name = f"{uuid.uuid4().hex}.mp3"
         audio_path = str(AUDIO_DIR / audio_name)
         audio_url = None
+        audio_url = None
         if not lightweight:
-            print(f"[Nagrik] Generating summary audio ({language})...")
-            tts_lang = "hi" if language == "Hindi" else "en"
-            await asyncio.to_thread(text_to_speech, tts_script, audio_path, lang=tts_lang)
-            audio_url = f"/audio/{audio_name}"
+            try:
+                print(f"[Nagrik] Generating summary audio ({language})...")
+                tts_lang = "hi" if language == "Hindi" else "en"
+                await asyncio.to_thread(text_to_speech, tts_script, audio_path, lang=tts_lang)
+                audio_url = f"/audio/{audio_name}"
+            except Exception as e:
+                logger.error(f"[Nagrik] Background TTS failed: {e}. Analysis will continue without audio.")
+                audio_url = None
 
         # Create dynamic summary
         first_page_purpose = page_results[0].get("document_purpose", "Document") if page_results else "Document"
@@ -431,3 +469,118 @@ async def generate_field_tts(
     audio_path = str(AUDIO_DIR / audio_name)
     await asyncio.to_thread(text_to_speech, text, audio_path, lang=lang)
     return JSONResponse({"audio_url": f"/audio/{audio_name}"})
+
+@app.post("/api/memory/search")
+async def search_memory(
+    query: str = Form(...),
+):
+    """Semantic cross-document search (Phase 9)."""
+    try:
+        results = await asyncio.to_thread(search_document_memory, query)
+        return JSONResponse({"results": results})
+    except Exception as e:
+        logger.error(f"[Nagrik] Memory search failed: {e}")
+        raise HTTPException(status_code=500, detail="Search failed")
+
+# --- Authentication & Cleanup (Phase 10) ---
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/token")
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    payload = verify_token(token)
+    if not payload:
+        raise HTTPException(status_code=401, detail="Invalid or expired token")
+    return payload["sub"]
+
+@app.post("/api/token")
+async def login(mobile: str = Form(...), password: str = Form(...)):
+    users_path = BASE_DIR / "data" / "users.json"
+    users = safe_read_json(users_path, default={})
+    
+    user = users.get(mobile)
+    if not user or not verify_password(password, user["password_hash"]):
+        raise HTTPException(status_code=401, detail="Incorrect mobile or password")
+    
+    access_token = create_access_token(data={"sub": mobile})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@app.post("/api/auth/register")
+async def register(mobile: str = Form(...), password: str = Form(...), full_name: str = Form(...)):
+    users_path = BASE_DIR / "data" / "users.json"
+    users = safe_read_json(users_path, default={})
+    
+    if mobile in users:
+        raise HTTPException(status_code=400, detail="This mobile number is already registered.")
+    
+    # Create new user
+    users[mobile] = {
+        "password_hash": get_password_hash(password),
+        "full_name": full_name
+    }
+    
+    # Save synchronously for prototype
+    ensure_dir(users_path.parent)
+    with open(users_path, "w", encoding="utf-8") as f:
+        json.dump(users, f)
+        
+    return {"message": "Registration successful! You can now log in."}
+
+@app.post("/api/auth/logout")
+async def logout(current_user: str = Depends(get_current_user)):
+    """Wipes all data for the current user session (Ephemeral Policy)."""
+    await asyncio.to_thread(clear_user_data, current_user)
+    return {"message": "Logged out and session cleared"}
+
+@app.delete("/api/history/{job_id}")
+async def delete_history_item(job_id: str, current_user: str = Depends(get_current_user)):
+    """Targeted deletion of a single document record."""
+    await asyncio.to_thread(clear_job_data, job_id)
+    return {"message": "Document deleted"}
+
+def clear_job_data(job_id: str):
+    """Deletes files and vectors associated with a job ID."""
+    if not job_id or ".." in job_id or "/" in job_id or "\\" in job_id:
+        print(f"Skipping invalid job_id: {job_id}")
+        return
+
+    # 1. Delete ChromaDB vectors
+    try:
+        clear_memory_for_job(job_id)
+    except Exception as e:
+        print(f"Error clearing memory for job {job_id}: {e}")
+    
+    # 2. Delete Result JSON
+    job_path = JOBS_DIR / f"{job_id}.json"
+    if job_path.exists():
+        # Try to find original file path inside job data
+        data = safe_read_json(job_path, default={})
+        orig_path = data.get("file_path")
+        if orig_path and os.path.exists(orig_path):
+            try: os.remove(orig_path)
+            except: pass
+        
+        try: os.remove(job_path)
+        except Exception as e:
+            print(f"Error removing job JSON {job_id}: {e}")
+    
+    # 3. Cleanup associated audio
+    if AUDIO_DIR.exists():
+        for audio in AUDIO_DIR.glob(f"audio_{job_id}_*.mp3"):
+            try: os.remove(audio)
+            except: pass
+
+def clear_user_data(user_id: str):
+    """Wipes everything. For this prototype, we treat all local history as 'current user data'."""
+    # In a multi-tenant setup, we'd filter by user_id. 
+    # For Nagrik prototype, we clear ALL jobs to ensure privacy on leave.
+    for job_file in JOBS_DIR.glob("job_*.json"):
+        job_id = job_file.stem
+        clear_job_data(job_id)
+    
+    # Also clear the entire memory collection
+    clear_memory_for_user(user_id)
+    logger.info(f"[Nagrik] User {user_id} data wiped.")
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

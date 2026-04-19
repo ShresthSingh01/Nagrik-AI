@@ -13,6 +13,7 @@ from .config import settings
 from .pageindex_tree import best_tree_nodes
 from .document_graph import DocumentGraph
 from .utils import safe_read_json, score_overlap, get_embedding, ensure_dir
+from .llm import simplify_page, ask_ai, rerank_memory_results
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +25,7 @@ CHROMA_PATH = BASE_DIR / "output" / "chroma_db"
 # --- Globals ---
 _CHROMA_CLIENT: chromadb.PersistentClient | None = None
 _COLLECTION: chromadb.Collection | None = None
+_MEM_COLLECTION: chromadb.Collection | None = None
 
 # --- Custom Embedding Function for ChromaDB ---
 class NagrikEmbeddingFunction(EmbeddingFunction):
@@ -44,7 +46,8 @@ def _get_collection() -> chromadb.Collection:
     
     ensure_dir(CHROMA_PATH)
     # Initialize Persistent Client (Zero-Infrastructure)
-    _CHROMA_CLIENT = chromadb.PersistentClient(path=str(CHROMA_PATH))
+    if _CHROMA_CLIENT is None:
+        _CHROMA_CLIENT = chromadb.PersistentClient(path=str(CHROMA_PATH))
     
     # Mistral embed size is 1024. HNSW cosine space for best semantic match.
     _COLLECTION = _CHROMA_CLIENT.get_or_create_collection(
@@ -53,6 +56,22 @@ def _get_collection() -> chromadb.Collection:
         metadata={"hnsw:space": "cosine"}
     )
     return _COLLECTION
+
+def _get_memory_collection() -> chromadb.Collection:
+    global _CHROMA_CLIENT, _MEM_COLLECTION
+    if _MEM_COLLECTION is not None:
+        return _MEM_COLLECTION
+    
+    ensure_dir(CHROMA_PATH)
+    if _CHROMA_CLIENT is None:
+        _CHROMA_CLIENT = chromadb.PersistentClient(path=str(CHROMA_PATH))
+    
+    _MEM_COLLECTION = _CHROMA_CLIENT.get_or_create_collection(
+        name="document_memory",
+        embedding_function=NagrikEmbeddingFunction(),
+        metadata={"hnsw:space": "cosine"}
+    )
+    return _MEM_COLLECTION
 
 def load_guidelines() -> list[dict[str, Any]]:
     """
@@ -240,3 +259,125 @@ def retrieve_document_context(tree: dict[str, Any], guidelines: Any, skip_embedd
     return {
         "guideline_hits": guideline_hits
     }
+
+def index_document_chunks(job_id: str, filename: str, pages: list[dict[str, Any]]) -> None:
+    """Chunks each page paragraph-by-paragraph and indexes into ChromaDB with context."""
+    collection = _get_memory_collection()
+    
+    ids = []
+    documents = []
+    metadatas = []
+    
+    for page in pages:
+        page_num = page.get("page", 0)
+        markdown = page.get("markdown", "")
+        # Paragraph-level chunking
+        paragraphs = [p.strip() for p in markdown.split("\n\n") if p.strip()]
+        
+        for i, para in enumerate(paragraphs):
+            # Deterministic but unique ID
+            chunk_id = f"{job_id}_p{page_num}_c{i}"
+            
+            # Contextual Injection: Prepend metadata to help semantic matching identify the doc
+            # This helps matching "Passport of John" to a chunk in passport.pdf
+            enriched_text = f"[Source: {filename}, Page: {page_num + 1}]\n{para}"
+            
+            ids.append(chunk_id)
+            documents.append(enriched_text)
+            metadatas.append({
+                "job_id": job_id,
+                "filename": filename,
+                "page": page_num,
+                "chunk_index": i,
+                "raw_text": para # Keep original for display
+            })
+            
+    if ids:
+        collection.upsert(
+            ids=ids,
+            documents=documents,
+            metadatas=metadatas
+        )
+        logger.info(f"[Nagrik] Indexed {len(ids)} document chunks for Memory.")
+
+def search_document_memory(query: str, n_results: int = 5) -> list[dict[str, Any]]:
+    """Cross-document semantic search with Keyword Boosting and LLM Reranking."""
+    collection = _get_memory_collection()
+    
+    # Retrieve more candidates than we need to allow for reranking
+    search_n = 15
+    res = collection.query(
+        query_texts=[query],
+        n_results=search_n
+    )
+    
+    hits = []
+    if res["ids"] and res["ids"][0]:
+        query_tokens = set(query.lower().split())
+        
+        for i in range(len(res["ids"][0])):
+            distance = res["distances"][0][i]
+            meta = res["metadatas"][0][i]
+            raw_text = meta.get("raw_text") or res["documents"][0][i]
+            
+            # Case-insensitive keyword boosting for multi-language support (English/Hindi)
+            text_lower = raw_text.lower()
+            overlap_count = sum(1 for token in query_tokens if token in text_lower)
+            boost = (overlap_count / max(1, len(query_tokens))) * 0.2
+            
+            # cosine distance: 0.0 is exact match, 1.0 is opposite
+            # Final score = semantic_score + keyword_boost
+            score = max(0.0, 1.0 - distance) + boost
+            
+            hits.append({
+                "score": round(score, 3),
+                "text": raw_text,
+                "filename": meta.get("filename"),
+                "page": meta.get("page"),
+                "job_id": meta.get("job_id")
+            })
+    
+    # Sort by improved heuristic score
+    hits.sort(key=lambda x: x["score"], reverse=True)
+    
+    # LLM Reranking Step: Refine the top 10
+    top_candidates = hits[:10]
+    if top_candidates:
+        try:
+            reranked = rerank_memory_results(query, top_candidates, top_k=n_results)
+            return reranked
+        except Exception as e:
+            logger.error(f"Reranking failed: {e}")
+            return hits[:n_results]
+            
+    return hits[:n_results]
+
+def clear_memory_for_job(job_id: str):
+    """Deletes all chunks belonging to a specific job ID."""
+    collection = _get_memory_collection()
+    try:
+        collection.delete(where={"job_id": job_id})
+        logger.info(f"[Nagrik] Deleted memory vectors for {job_id}")
+    except Exception as e:
+        logger.error(f"[Nagrik] Failed to delete memory for {job_id}: {e}")
+
+def clear_memory_for_user(user_id: str):
+    """
+    Purges all memory. For this prototype, we clear everything to ensure 
+    privacy on leave, matching our 'Session-Ephemeral' policy.
+    """
+    collection = _get_memory_collection()
+    try:
+        # Currently, since we don't have separate collections per user, 
+        # we clear the entire collection to honor the 'Wipe on Logout' policy.
+        # In a multi-user production system, we would filter by user_id.
+        count = collection.count()
+        if count > 0:
+            # Note: ChromaDB 0.4+ delete() with no filters deletes according to collection logic.
+            # We can also get all IDs and delete them.
+            results = collection.get()
+            if results["ids"]:
+                collection.delete(ids=results["ids"])
+            logger.info(f"[Nagrik] Memory cache for {user_id} cleared ({count} items).")
+    except Exception as e:
+        logger.error(f"[Nagrik] Failed to clear user memory: {e}")

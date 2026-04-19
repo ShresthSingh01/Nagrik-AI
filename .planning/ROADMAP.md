@@ -33,3 +33,23 @@ Transforming the single-page MVP into a guided multi-step processing flow.
 ### Phase 6: Final Visual Audit & Accessibility Polish
 - WCAG 2.1 AA check.
 - Staggered entry animations for a "premium" feel.
+
+## Milestone 4: Security & Performance
+Advanced system hardening and visual optimization.
+
+### Phase 7: CAPTCHA Login System
+- Implement secure login view.
+- CAPTCHA generation and validation logic.
+- Session persistence.
+
+### Phase 8: Image Compression Simulation
+- Simulate document optimization feedback.
+- Animated progress bars for file reduction.
+- Original vs. Compressed size comparison.
+
+### Phase 9: Chroma DB Cross-page Memory
+- Implement paragraph-by-paragraph document chunking.
+- Setup document-specific Chroma collections.
+- Dedicated "Memory" UI tab for semantic retrieval across all pages.
+
+

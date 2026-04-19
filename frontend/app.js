@@ -5,9 +5,11 @@
 
 // --- DOM Elements ---
 const views = {
+  login: document.getElementById("view-login"),
   home: document.getElementById("view-home"),
   scan: document.getElementById("view-scan"),
   history: document.getElementById("view-history"),
+  memory: document.getElementById("view-memory"),
 };
 
 const scanSteps = {
@@ -26,7 +28,13 @@ const navItems = {
   home: document.getElementById("nav-home"),
   scan: document.getElementById("nav-scan"),
   history: document.getElementById("nav-history"),
+  memory: document.getElementById("nav-memory"),
 };
+
+// Memory Elements
+const memorySearchInput = document.getElementById("memorySearchInput");
+const memorySearchBtn = document.getElementById("memorySearchBtn");
+const memoryResults = document.getElementById("memoryResults");
 
 // Inputs & Buttons
 const cameraInput = document.getElementById("cameraInput");
@@ -37,6 +45,7 @@ const takePhotoBtn = document.getElementById("takePhotoBtn");
 const uploadFileBtn = document.getElementById("uploadFileBtn");
 const cancelStepBtn = document.getElementById("cancelStepBtn");
 const newScanShortBtn = document.getElementById("newScanShortBtn");
+const logoutBtn = document.getElementById("logoutBtn");
 const shareBtn = document.getElementById("shareBtn");
 
 // Result Elements
@@ -70,6 +79,24 @@ const onboardingModal = document.getElementById("nagrikOnboarding");
 const saveProfileBtn = document.getElementById("saveProfileBtn");
 const onboardingSection1 = document.getElementById("onboardingSection1");
 const onboardingSection2 = document.getElementById("onboardingSection2");
+
+const loginSpinner = document.getElementById("loginSpinner");
+const loginSuccessEl = document.getElementById("loginSuccess");
+const loginErrorEl = document.getElementById("loginError");
+const toggleAuthBtn = document.getElementById("toggleAuthBtn");
+const toggleMsg = document.getElementById("toggleMsg");
+const fullNameGroup = document.getElementById("full-name-group");
+const registerNameInput = document.getElementById("register-name");
+const loginMobileInput = document.getElementById("login-mobile");
+const loginPassInput = document.getElementById("login-pass");
+const captchaInput = document.getElementById("captchaInput");
+const askAIToggleBtn = document.getElementById("askAIToggleBtn");
+const askAIToggleBtnText = document.getElementById("askAIToggleBtnText");
+
+// --- Auth State ---
+let isRegisterMode = false;
+let currentCaptcha = "";
+const LOG_AUTH_KEY = "nagrik_logged_in";
 
 // Audio Controls
 const playPauseBtn = document.getElementById("playPauseBtn");
@@ -159,11 +186,22 @@ const I18N = {
     step_label: "Step",
     res_back: "Back",
     page_info_text: "Fill these details on this page",
-    btn_footer_back: "Previous Page",
-    btn_footer_next: "Next Page",
-    btn_footer_replay: "Listen Again",
+    res_footer_back: "Previous Page",
+    res_footer_next: "Next Page",
+    res_footer_replay: "Listen Again",
     hero_tagline: "This form is for government help.",
-    hero_instructions: "Fill the details below correctly. Listen to audio if confused."
+    hero_instructions: "Fill the details below correctly. Listen to audio if confused.",
+    // Memory tab
+    nav_memory: "Memory",
+    mem_title: "Document Memory",
+    mem_subtitle: "Search information across all old documents",
+    mem_placeholder: "Search name, address or info...",
+    mem_search: "Search",
+    mem_empty: "Type above to start searching your history.",
+    // Results help
+    res_help_title: "Don't understand?",
+    res_help_sub: "Use 'Listen' buttons above or ask AI below",
+    res_help_btn: "Ask AI"
   },
   hi: {
     hero_title: "दस्तावेज़ों को समझने में मदद।",
@@ -241,11 +279,22 @@ const I18N = {
     step_label: "स्टेप",
     res_back: "वापस जाएं",
     page_info_text: "इस पेज में आपको ये जानकारी भरनी है",
-    btn_footer_back: "पिछला पेज",
-    btn_footer_next: "अगला पेज देखें",
-    btn_footer_replay: "फिर से सुनें",
+    res_footer_back: "पिछला पेज",
+    res_footer_next: "अगला पेज देखें",
+    res_footer_replay: "फिर से सुनें",
     hero_tagline: "यह फ़ॉर्म सरकारी मदद के लिए है।",
-    hero_instructions: "नीचे दी गई जानकारी सही भरें। समझ न आए तो आवाज़ में सुनें।"
+    hero_instructions: "नीचे दी गई जानकारी सही भरें। समझ न आए तो आवाज़ में सुनें।",
+    // Memory tab
+    nav_memory: "याददाश्त",
+    mem_title: "दस्तावेज़ याददाश्त",
+    mem_subtitle: "पुराने दस्तावेज़ों में जानकारी खोजें",
+    mem_placeholder: "नाम, पता या कोई जानकारी खोजें...",
+    mem_search: "खोजें",
+    mem_empty: "खोज शुरू करने के लिए ऊपर टाइप करें",
+    // Results help
+    res_help_title: "समझ न आए?",
+    res_help_sub: "ऊपर 'सुनें' बटन दबाएं या AI से पूछें",
+    res_help_btn: " AI से पूछें"
   }
 };
 
@@ -265,6 +314,7 @@ function applyLanguage(lang) {
     "nav-home-label": t.nav_home,
     "nav-scan-label": t.nav_scan,
     "nav-history-label": t.nav_history,
+    "nav-memory-label": t.nav_memory,
     "step-1-label-text": t.scan_step_1,
     "step-2-label-text": t.scan_step_2,
     "step-3-label-text": t.scan_step_3,
@@ -287,6 +337,14 @@ function applyLanguage(lang) {
     "history-title-el": t.history_title,
     "history-subtext-el": t.history_subtext,
     "empty-state-text": t.empty_state,
+    "mem-title-el": t.mem_title,
+    "mem-subtitle-el": t.mem_subtitle,
+    "memorySearchInput": t.mem_placeholder,
+    "memorySearchBtn": t.mem_search,
+    "mem-empty-msg": t.mem_empty,
+    "res-ai-ask-title": t.res_help_title,
+    "res-ai-ask-sub": t.res_help_sub,
+    "askAiCtaBtn": t.res_help_btn,
     "askAIToggleBtnText": t.ask_ai_btn,
     "ask-ai-title-el": t.ask_ai_title,
     "ask-ai-welcome-msg": t.ask_ai_welcome,
@@ -297,9 +355,9 @@ function applyLanguage(lang) {
     "level-voice-label": t.level_voice,
     "saveProfileBtn": t.btn_save_start,
     "page-info-text": t.page_info_text,
-    "resFooterBackBtn": t.btn_footer_back,
-    "resFooterNextBtn": t.btn_footer_next,
-    "resFooterReplayBtn": t.btn_footer_replay,
+    "resFooterBackBtn": t.res_footer_back,
+    "resFooterNextBtn": t.res_footer_next,
+    "resFooterReplayBtn": t.res_footer_replay,
     "hero-tagline": t.hero_tagline,
     "hero-instructions": t.hero_instructions,
     "play-btn-text": t.btn_play,
@@ -382,34 +440,85 @@ const Storage = {
   },
   hydrateLists() {
     const items = this.getAll();
+    const lang = localStorage.getItem("nagrik_lang") || "hi";
+    const t = I18N[lang] || I18N.hi;
+
     [recentActivityList, historyList].forEach(list => {
       if (!list) return;
+      
+      list.innerHTML = "";
+      
       if (items.length === 0) {
-        // preserve empty state if needed
+        list.innerHTML = `<div class="empty-state" style="padding: 20px; text-align: center; color: #718096;">
+          <div style="font-size: 32px; margin-bottom: 8px;">🎞️</div>
+          <p>${t.empty_state || "No documents yet."}</p>
+        </div>`;
         return;
       }
-      list.innerHTML = "";
+
       items.forEach(item => {
         const div = document.createElement("div");
         div.className = "activity-item";
         div.innerHTML = `
           <div class="activity-icon">📄</div>
-          <div class="activity-info">
-            <h4>${item.filename}</h4>
+          <div class="activity-info" style="flex:1">
+            <h4>${item.filename || "Untitled"}</h4>
             <p>${new Date(item.timestamp).toLocaleDateString()}</p>
           </div>
-          <button class="view-doc-btn" data-id="${item.id}">View</button>
+          <div style="display:flex; gap: 8px;">
+            <button class="view-doc-btn" data-id="${item.id}">View</button>
+            <button class="delete-doc-btn" data-id="${item.id}" style="background:rgba(255,0,0,0.1); color:red; border:none; padding:8px; border-radius:8px;">🗑️</button>
+          </div>
         `;
         div.querySelector('.view-doc-btn').onclick = () => {
              resultsSection.dataset.currentId = item.id;
              renderResult(item);
              switchView("scan");
         };
+        div.querySelector('.delete-doc-btn').onclick = async (e) => {
+            e.stopPropagation();
+            if (confirm(lang === "hi" ? "दस्तावेज़ हटाना चाहते हैं?" : "Delete document from record?")) {
+                await deleteHistoryItem(item.job_id, item.id);
+            }
+        };
         list.appendChild(div);
       });
     });
   }
 };
+
+async function deleteHistoryItem(jobId, storageId) {
+  try {
+      console.log(`Deleting document: JobID=${jobId}, StorageID=${storageId}`);
+      
+      // Only call API if jobId is valid
+      if (jobId && jobId !== "undefined") {
+          const res = await fetch(`/api/history/${jobId}`, { 
+              method: "DELETE",
+              headers: getAuthHeader()
+          });
+          if (!res.ok) {
+              console.warn("Backend deletion failed, proceeding with local removal", res.status);
+          }
+      } else {
+          console.warn("No valid JobID found, removing from local storage only.");
+      }
+
+      let items = Storage.getAll();
+      items = items.filter(it => it.id !== storageId);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      Storage.hydrateLists();
+      
+      // If we are currently viewing this document, close the results view
+      if (resultsSection.dataset.currentId === storageId) {
+          resultsSection.hidden = true;
+          document.body.classList.remove("results-active");
+          switchView("home");
+      }
+  } catch (err) {
+      console.error("Delete failed", err);
+  }
+}
 
 // --- Image Optimization (Hardening 5: Atomic Purge) ---
 async function compressImage(file, maxWidth = 1600, maxHeight = 1600, quality = 0.8) {
@@ -544,6 +653,17 @@ function switchView(target) {
     if(navItems[target]) navItems[target].classList.add("active");
   }
 
+  // Hide bottom nav if login is active
+  const bottomNav = document.querySelector(".bottom-nav");
+  if (bottomNav) {
+    bottomNav.style.display = (target === "login") ? "none" : "flex";
+  }
+
+  // Toggle AskAI button visibility
+  if (askAIToggleBtn) {
+    askAIToggleBtn.style.display = (target === "login") ? "none" : "flex";
+  }
+
   if (target === "scan") {
     if (resultsSection.hidden) {
       gotoScanStep(1);
@@ -600,15 +720,288 @@ function playSuccessSound() {
     });
   });
 }
+// --- Compression Simulation (Phase 8) ---
+function formatBytes(bytes, decimals = 2) {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const dm = decimals < 0 ? 0 : decimals;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i];
+}
+
+async function simulateCompression(file) {
+    const compressionStats = document.getElementById("compressionStats");
+    const originalSizeEl = document.getElementById("originalSize");
+    const compressedSizeEl = document.getElementById("compressedSize");
+    const savedPercentEl = document.getElementById("savedPercent");
+    const progressBar = document.getElementById("compressionProgressBar");
+    const statusMsg = document.getElementById("processingStatus");
+
+    if (!compressionStats || !progressBar) return;
+
+    // Show simulation UI
+    compressionStats.style.display = "block";
+    
+    const originalSizeBytes = file.size;
+    const isImage = file.type.startsWith('image/');
+    const ratio = isImage ? 0.15 : 0.85; // 85% reduction for images, 15% for PDFs (Visual simulation)
+    const targetSizeBytes = Math.round(originalSizeBytes * ratio);
+    const targetSavedPercent = Math.round((1 - ratio) * 100);
+
+    originalSizeEl.textContent = formatBytes(originalSizeBytes);
+
+    const duration = 1800; // 1.8 seconds for premium feel
+    const start = performance.now();
+
+    return new Promise(resolve => {
+        function update(now) {
+            const elapsed = now - start;
+            const progress = Math.min(elapsed / duration, 1);
+            
+            // Vishwa Progress Bar Update
+            progressBar.style.width = `${progress * 100}%`;
+            
+            // Stats Count-up
+            const currentCompressed = Math.round(originalSizeBytes - (originalSizeBytes - targetSizeBytes) * progress);
+            const currentSaved = Math.round(targetSavedPercent * progress);
+            
+            compressedSizeEl.textContent = formatBytes(currentCompressed);
+            savedPercentEl.textContent = `${currentSaved}%`;
+
+            if (progress < 1) {
+                requestAnimationFrame(update);
+            } else {
+                setTimeout(() => {
+                    compressionStats.style.display = "none";
+                    resolve();
+                }, 400);
+            }
+        }
+        requestAnimationFrame(update);
+    });
+}
 
 
 
 
 
 
+// --- Auth Logic ---
+function generateCaptcha() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Removed ambiguous chars like 0, O, 1, I
+  let result = "";
+  for (let i = 0; i < 5; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  currentCaptcha = result;
+  if (captchaCodeDisplay) {
+    captchaCodeDisplay.textContent = result;
+  }
+}
+
+// --- Auth Logic (Phase 10: JWT & Session-Ephemeral) ---
+function getAuthHeader() {
+  const token = localStorage.getItem("nagrik_jwt");
+  return token ? { "Authorization": `Bearer ${token}` } : {};
+}
+
+function toggleAuthMode() {
+  isRegisterMode = !isRegisterMode;
+  loginErrorEl.hidden = true;
+  loginSuccessEl.hidden = true;
+  
+  if (isRegisterMode) {
+    document.querySelector(".login-header h2").textContent = "Nagrik Register";
+    fullNameGroup.hidden = false;
+    loginBtnText.textContent = "Create Account / खाता बनाएं";
+    toggleMsg.textContent = "Already have an account? / क्या आपका खाता पहले से है?";
+    toggleAuthBtn.textContent = "Login / लॉगिन करें";
+  } else {
+    document.querySelector(".login-header h2").textContent = "Nagrik Login";
+    fullNameGroup.hidden = true;
+    loginBtnText.textContent = "Login / लॉगिन करें";
+    toggleMsg.textContent = "Don't have an account? / क्या आपका खाता नहीं है?";
+    toggleAuthBtn.textContent = "Create Account / खाता बनाएं";
+  }
+  generateCaptcha();
+  captchaInput.value = "";
+}
+
+async function validateAuth() {
+  if (isRegisterMode) {
+    await handleRegister();
+  } else {
+    await validateLogin();
+  }
+}
+
+async function handleRegister() {
+  const name = registerNameInput.value.trim();
+  const mobile = loginMobileInput.value.trim();
+  const pass = loginPassInput.value.trim();
+  const enteredCaptcha = captchaInput.value.trim().toUpperCase();
+
+  loginErrorEl.hidden = true;
+  loginSuccessEl.hidden = true;
+
+  if (!name) {
+    showLoginError("Please enter your full name.");
+    return;
+  }
+  if (!mobile || mobile.length < 10) {
+    showLoginError("Please enter a valid 10-digit mobile number.");
+    return;
+  }
+  if (!pass || pass.length < 6) {
+    showLoginError("Password must be at least 6 characters.");
+    return;
+  }
+  if (enteredCaptcha !== currentCaptcha) {
+    showLoginError("Invalid CAPTCHA.");
+    generateCaptcha();
+    return;
+  }
+
+  loginBtn.disabled = true;
+  loginBtnText.hidden = true;
+  loginSpinner.hidden = false;
+
+  try {
+    const formData = new FormData();
+    formData.append("full_name", name);
+    formData.append("mobile", mobile);
+    formData.append("password", pass);
+
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await res.json();
+    if (!res.ok) {
+        throw new Error(data.detail || "Registration failed.");
+    }
+
+    loginSuccessEl.textContent = data.message;
+    loginSuccessEl.hidden = false;
+    
+    // Switch to login mode after 2s
+    setTimeout(() => {
+      toggleAuthMode();
+      loginSuccessEl.hidden = true;
+    }, 2000);
+
+  } catch (err) {
+    showLoginError(err.message);
+  } finally {
+    loginBtn.disabled = false;
+    loginBtnText.hidden = false;
+    loginSpinner.hidden = true;
+  }
+}
+
+async function validateLogin() {
+  const mobile = loginMobileInput.value.trim();
+  const pass = loginPassInput.value.trim();
+  const enteredCaptcha = captchaInput.value.trim().toUpperCase();
+
+  loginErrorEl.hidden = true;
+
+  if (!mobile || mobile.length < 10) {
+    showLoginError("Please enter a valid 10-digit mobile number.");
+    return;
+  }
+  if (!pass) {
+    showLoginError("Please enter your password.");
+    return;
+  }
+  if (enteredCaptcha !== currentCaptcha) {
+    showLoginError("Invalid CAPTCHA. Please try again.");
+    generateCaptcha();
+    captchaInput.value = "";
+    document.querySelector(".login-card").classList.add("shake");
+    setTimeout(() => document.querySelector(".login-card").classList.remove("shake"), 400);
+    return;
+  }
+
+  // Success flow
+  loginBtn.disabled = true;
+  loginBtnText.hidden = true;
+  loginSpinner.hidden = false;
+
+  try {
+    const formData = new FormData();
+    formData.append("mobile", mobile);
+    formData.append("password", pass);
+
+    const res = await fetch("/api/token", {
+      method: "POST",
+      body: formData
+    });
+
+    if (!res.ok) {
+      throw new Error("Invalid mobile or password.");
+    }
+
+    const { access_token } = await res.json();
+    localStorage.setItem("nagrik_jwt", access_token);
+    localStorage.setItem(LOG_AUTH_KEY, "true");
+    
+    switchView("home");
+    initApp(); // Refresh state
+
+    // Haptic feedback
+    if (navigator.vibrate) navigator.vibrate(50);
+  } catch (err) {
+    showLoginError(err.message);
+    generateCaptcha();
+  } finally {
+    loginBtn.disabled = false;
+    loginBtnText.hidden = false;
+    loginSpinner.hidden = true;
+  }
+}
+
+async function handleLogout() {
+  try {
+    const headers = getAuthHeader();
+    await fetch("/api/auth/logout", { method: "POST", headers });
+  } catch (e) {
+    console.warn("Logout cleanup failed", e);
+  } finally {
+    localStorage.removeItem(LOG_AUTH_KEY);
+    localStorage.removeItem("nagrik_jwt");
+    localStorage.removeItem(STORAGE_KEY); // Purge local history
+    window.location.reload();
+  }
+}
+
+// Session-Ephemeral: Cleanup on tab close/leave
+window.addEventListener("beforeunload", (event) => {
+  if (localStorage.getItem(LOG_AUTH_KEY) === "true") {
+    const token = localStorage.getItem("nagrik_jwt");
+    if (token) {
+      // Use deliverBeacon for reliable cleanup on close
+      const url = "/api/auth/logout";
+      // Fetch with keepalive is better than beacon for JSON/Headers
+      fetch(url, { 
+        method: "POST", 
+        headers: { "Authorization": `Bearer ${token}` },
+        keepalive: true 
+      });
+    }
+  }
+});
+
+function showLoginError(msg) {
+  loginErrorEl.textContent = msg;
+  loginErrorEl.hidden = false;
+}
 
 // --- Event Listeners ---
 startScanBtn.onclick = () => switchView("scan");
+if (newScanShortBtn) newScanShortBtn.onclick = () => switchView("scan");
 takePhotoBtn.onclick = () => cameraInput.click();
 uploadFileBtn.onclick = () => fileInput.click();
 cancelStepBtn.onclick = () => gotoScanStep(1);
@@ -642,6 +1035,11 @@ processBtn.onclick = async () => {
   const statusMsg = document.getElementById("processingStatus");
   statusMsg.textContent = "Hardening memory for mobile...";
   
+  // Sequential Simulation (Phase 8)
+  await simulateCompression(rawFile);
+  
+  statusMsg.textContent = "Starting analysis...";
+  
   let file = null;
   let msgInterval = null;
   const uploadController = new AbortController();
@@ -671,6 +1069,7 @@ processBtn.onclick = async () => {
 
     const res = await fetchWithRetry("/api/process", {
       method: "POST",
+      headers: getAuthHeader(),
       body: formData,
       signal: uploadController.signal,
     });
@@ -696,7 +1095,10 @@ processBtn.onclick = async () => {
       pollAttempts++;
       await sleep(getPollDelayMs(pollAttempts));
       
-      const pollRes = await fetch(`/api/status/${job_id}`, { signal: uploadController.signal });
+      const pollRes = await fetch(`/api/status/${job_id}`, { 
+          signal: uploadController.signal,
+          headers: getAuthHeader()
+      });
       if (!pollRes.ok) continue;
       
       const job = await pollRes.json();
@@ -883,7 +1285,10 @@ function renderFields(fields, pageNum, pageData = null) {
       try {
         const res = await fetch("/api/tts-field", {
           method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          headers: { 
+              "Content-Type": "application/x-www-form-urlencoded",
+              ...getAuthHeader()
+          },
           body: new URLSearchParams({ text, lang: lang })
         });
         const audioData = await res.json();
@@ -1061,7 +1466,11 @@ async function handleAIQuestion(question) {
         formData.append("session_id", "session_" + (currentDocId || "global").substring(0, 8));
 
 
-        const res = await fetch("/api/ask", { method: "POST", body: formData });
+        const res = await fetch("/api/ask", { 
+            method: "POST", 
+            body: formData,
+            headers: getAuthHeader() 
+        });
         const data = await res.json();
         
         if (data.answer) {
@@ -1082,7 +1491,10 @@ async function speakResponse(text, lang) {
     try {
         const res = await fetch("/api/tts-field", {
             method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            headers: { 
+                "Content-Type": "application/x-www-form-urlencoded",
+                ...getAuthHeader()
+            },
             body: new URLSearchParams({ text, lang: lang })
         });
         const audioData = await res.json();
@@ -1256,4 +1668,128 @@ function uuidv4() {
 
 // --- Initialization ---
 Storage.hydrateLists();
-switchView("home");
+
+function initApp() {
+  if (localStorage.getItem(LOG_AUTH_KEY) === "true") {
+    // If logged in, check if onboarding is needed
+    if (!localStorage.getItem(CONFIG_KEY)) {
+        // Force onboarding if first time
+        switchView("home"); // Dashboard background
+        onboardingModal.hidden = false;
+        onboardingModal.style.display = "flex";
+        onboardingSection1.hidden = false;
+        onboardingSection1.style.display = "block";
+    } else {
+        switchView("home");
+    }
+  } else {
+    switchView("login");
+    generateCaptcha();
+  }
+}
+
+initApp();
+
+// Event Listeners for Login
+if (loginBtn) loginBtn.onclick = validateAuth;
+if (toggleAuthBtn) toggleAuthBtn.onclick = toggleAuthMode;
+if (logoutBtn) logoutBtn.onclick = handleLogout;
+if (refreshCaptchaBtn) refreshCaptchaBtn.onclick = generateCaptcha;
+// Allow enter key to login
+if (loginMobileInput && loginPassInput && captchaInput) {
+    [loginMobileInput, loginPassInput, captchaInput, registerNameInput].forEach(input => {
+        if (!input) return;
+        input.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") validateAuth();
+        });
+    });
+}
+
+// --- Phase 9: Cross-page Semantic Memory ---
+
+// Navigation Listeners for Bottom Nav
+Object.keys(navItems).forEach(key => {
+  if (navItems[key]) {
+      navItems[key].onclick = (e) => {
+          e.preventDefault();
+          switchView(key);
+      };
+  }
+});
+
+async function handleMemorySearch() {
+  const query = memorySearchInput.value.trim();
+  if (!query) return;
+
+  const lang = localStorage.getItem("nagrik_lang") || "hi";
+  const t = I18N[lang] || I18N.hi;
+
+  // Show loading state
+  memoryResults.innerHTML = `
+    <div class="empty-state">
+      <div class="spinner-mini" style="margin: 0 auto 16px auto; border-top-color: var(--color-primary);"></div>
+      <p>${lang === "hi" ? "खोज रहे हैं..." : "Searching history..."}</p>
+    </div>
+  `;
+
+  try {
+      const formData = new FormData();
+      formData.append("query", query);
+
+      const res = await fetch("/api/memory/search", {
+          method: "POST",
+          body: formData,
+          headers: getAuthHeader()
+      });
+      const data = await res.json();
+
+      if (data.results && data.results.length > 0) {
+          memoryResults.innerHTML = "";
+          data.results.forEach(hit => {
+              const div = document.createElement("div");
+              div.className = "memory-item";
+              div.innerHTML = `
+                  <div class="meta">
+                      <div class="filename">📄 ${hit.filename}</div>
+                      <div class="page-badge">Page ${hit.page + 1}</div>
+                  </div>
+                  <div class="text">"${hit.text}"</div>
+                  <div class="score-tag">
+                      <span>🎯</span> ${lang === "hi" ? "सटीकता" : "Match"}: ${Math.round(hit.score * 100)}%
+                  </div>
+              `;
+              div.onclick = () => {
+                  const doc = Storage.getAll().find(d => d.id === hit.job_id);
+                  if (doc) {
+                      resultsSection.dataset.currentId = doc.id;
+                      renderResult(doc);
+                      switchView("scan");
+                      // Scroll to specific page tab
+                      setTimeout(() => {
+                          const tab = document.querySelector(`.tab-btn[data-index="${hit.page}"]`);
+                          if (tab) tab.click();
+                      }, 100);
+                  }
+              };
+              memoryResults.appendChild(div);
+          });
+      } else {
+          memoryResults.innerHTML = `
+            <div class="empty-state">
+              <div class="icon">🏜️</div>
+              <p>${t.mem_empty || "No matches found."}</p>
+            </div>
+          `;
+      }
+  } catch (err) {
+      console.error("Memory search failed:", err);
+      memoryResults.innerHTML = `<div class="empty-state"><p>Search unavailable.</p></div>`;
+  }
+}
+
+if (memorySearchBtn) memorySearchBtn.onclick = handleMemorySearch;
+if (memorySearchInput) {
+  memorySearchInput.onkeypress = (e) => {
+      if (e.key === "Enter") handleMemorySearch();
+  };
+}

@@ -25,6 +25,63 @@
       </div>
     </header>
 
+    <!-- Login View -->
+    <div id="view-login" class="page-view" hidden>
+      <section class="login-container fade-up">
+        <div class="login-header">
+          <img src="/static/assets/logo.png?v=3" alt="Nagrik" class="login-logo">
+          <h2>Nagrik Login</h2>
+          <p class="subtext">सरकारी दस्तावेज़ अब आपकी मुट्ठी में</p>
+        </div>
+
+        <div class="login-card glass-panel">
+          <div id="full-name-group" class="input-group" hidden>
+            <label for="register-name">Full Name / आपका पूरा नाम</label>
+            <input type="text" id="register-name" placeholder="E.g. Rajesh Kumar">
+          </div>
+
+          <div class="input-group">
+            <label for="login-mobile">Mobile Number / मोबाइल नंबर</label>
+            <input type="tel" id="login-mobile" placeholder="99xxxxxxxx" maxlength="10">
+          </div>
+
+          <div class="input-group">
+            <label for="login-pass">Password / पासवर्ड</label>
+            <input type="password" id="login-pass" placeholder="Enter your password">
+          </div>
+
+          <div class="captcha-section">
+             <label>CAPTCHA / सुरक्षा कोड</label>
+             <div class="captcha-wrapper">
+               <div class="captcha-display-box">
+                 <div id="captchaCodeDisplay" class="captcha-code-text"></div>
+                 <div class="captcha-noise"></div>
+               </div>
+               <button id="refreshCaptchaBtn" class="btn-icon-only" type="button" title="Refresh">
+                 <span class="icon">🔄</span>
+               </button>
+             </div>
+             <input type="text" id="captchaInput" placeholder="Type the 5 characters above" maxlength="5">
+          </div>
+
+          <p id="loginError" class="error-text" hidden></p>
+          <p id="loginSuccess" style="color: #2d6a4f; font-size: 14px; margin-bottom: 12px; font-weight: 600;" hidden></p>
+
+          <button id="loginBtn" class="primary login-btn">
+            <span id="loginBtnText">Login / लॉगिन करें</span>
+            <div id="loginSpinner" class="spinner-mini" hidden></div>
+          </button>
+          
+          <div class="login-footer" style="margin-top: 16px; text-align: center;">
+            <p id="toggleMsg" style="margin-bottom: 8px;">Don't have an account? / क्या आपका खाता नहीं है?</p>
+            <button id="toggleAuthBtn" style="background:none; border:none; color: #2b6cb0; text-decoration: underline; font-weight: 700; cursor: pointer;">
+              Create Account / खाता बनाएं
+            </button>
+          </div>
+        </div>
+      </section>
+    </div>
+
     <!-- Home Dashboard View -->
     <div id="view-home" class="page-view">
       <section class="hero fade-up">
@@ -35,6 +92,9 @@
             नया स्कैन शुरू करें या अपने हाल के दस्तावेज़ नीचे देखें। आपका सारा डेटा इस फोन पर रहता है।
           </p>
           <button id="startScanBtn">नया स्कैन शुरू करें</button>
+          <button id="logoutBtn" style="background:none; border: 1.5px solid #CBD5E0; color: #4A5568; margin-top: 12px; font-weight: 500;">
+            <span class="icon" style="margin-right: 8px;">🚪</span> Logout / बाहर निकलें
+          </button>
         </div>
         <div class="panel delay-1">
           <p id="recent-activity-label" class="eyebrow">हाल के दस्तावेज़</p>
@@ -110,6 +170,31 @@
         <div class="card processing-view">
           <div class="spinner"><div></div></div>
           <h2 id="processingStatus" class="status-line">Analyzing document...</h2>
+          
+          <!-- Compression Simulation UI -->
+          <div id="compressionStats" class="compression-stats-card" style="display: none;">
+            <div class="stats-header">
+              <span class="icon">⚡</span> Optimizing for Global Processing
+            </div>
+            <div class="stats-grid">
+              <div class="stat-item">
+                <span id="label-orig" class="label">Original</span>
+                <span id="originalSize" class="value">0 KB</span>
+              </div>
+              <div class="stat-item">
+                <span id="label-comp" class="label">Optimized</span>
+                <span id="compressedSize" class="value accent">0 KB</span>
+              </div>
+              <div class="stat-item">
+                <span id="label-saved" class="label">Saved</span>
+                <span id="savedPercent" class="value green">0%</span>
+              </div>
+            </div>
+            <div class="compression-progress-container">
+              <div id="compressionProgressBar" class="compression-progress-bar"></div>
+            </div>
+          </div>
+
           <p id="processing-subtext-el" class="subtext">इसमें 10-15 सेकंड लगते हैं। कृपया ऐप बंद न करें।</p>
         </div>
       </div>
@@ -189,8 +274,8 @@
         <!-- Ask AI Bento -->
         <section class="ask-ai-bento-results fade-up">
           <div class="ai-banner-text">
-             <h3 style="font-size: 20px; font-weight: 800; color: #1a202c;">समझ न आए?</h3>
-             <p style="color: #4a5568;">ऊपर दिए गए 'सुनें' बटन दबाएं या पूछें</p>
+             <h3 id="res-ai-ask-title" style="font-size: 20px; font-weight: 800; color: #1a202c;">समझ न आए?</h3>
+             <p id="res-ai-ask-sub" style="color: #4a5568;">ऊपर दिए गए 'सुनें' बटन दबाएं या पूछें</p>
           </div>
           <button type="button" id="askAiCtaBtn" class="btn-ask-nagrik">
             <span class="icon">💬</span> पूछें AI से
@@ -239,10 +324,37 @@
       <span class="nav-icon">🕒</span>
       <span id="nav-history-label">पुराने दस्तावेज़</span>
     </a>
+    <a href="#" id="nav-memory" class="nav-item">
+      <span class="nav-icon">🧠</span>
+      <span id="nav-memory-label">याददाश्त</span>
+    </a>
   </nav>
 
+  <!-- 🧠 Step 5: Semantic Memory (Cross-Page context store) -->
+  <section id="view-memory" class="page-view" hidden>
+    <div class="view-header">
+      <h2 id="mem-title-el">दस्तावेज़ याददाश्त</h2>
+      <p id="mem-subtitle-el">सभी पुराने दस्तावेज़ों में जानकारी खोजें</p>
+    </div>
+
+    <div class="search-container fade-up">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="memorySearchInput" placeholder="नाम, पता या कोई जानकारी खोजें...">
+        <button id="memorySearchBtn" class="primary">खोजें</button>
+      </div>
+    </div>
+
+    <div id="memoryResults" class="memory-results-list">
+      <div class="empty-state">
+        <div class="icon">🔍</div>
+        <p id="mem-empty-msg">खोज शुरू करने के लिए ऊपर टाइप करें</p>
+      </div>
+    </div>
+  </section>
+
   <!-- 🎤 Voice-First Ask AI -->
-  <button id="askAIToggleBtn" class="ask-ai-float">
+  <button id="askAIToggleBtn" class="ask-ai-float" style="display: none;">
     <span class="icon" style="display: flex; align-items: center;">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>

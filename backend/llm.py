@@ -242,6 +242,64 @@ Return strictly JSON in {language}: {{"answer": "your answer here", "pages_cited
     return {"answer": fallback_msgs.get(language, fallback_msgs["English"])}
 
 
+def rerank_memory_results(query: str, hits: list[dict[str, Any]], top_k: int = 5) -> list[dict[str, Any]]:
+    """
+    Uses the LLM to rerank retrieved document chunks based on precise relevance.
+    Input: query string, list of hits (each with 'text', 'filename', 'page').
+    Return: Reranked list of hits, capped at top_k.
+    """
+    if not hits:
+        return []
+
+    # Format candidates for the LLM
+    candidates = []
+    for i, h in enumerate(hits):
+        candidates.append(f"ID:{i} | FILE:{h['filename']} | PAGE:{h['page'] + 1}\nCONTENT: {h['text'][:300]}")
+
+    candidate_text = "\n\n".join(candidates)
+
+    system_prompt = """You are a precise search reranker. 
+    Evaluate the relevance of document chunks against a user query.
+    Return a JSON object with a 'ranked_ids' key containing indices (0, 1, 2...) in order of relevance.
+    Only include indices that are truly relevant. If none are relevant, return an empty list.
+    Example: {"ranked_ids": [2, 0, 5]}"""
+
+    user_prompt = f"""
+    USER QUERY: {query}
+
+    CANDIDATE CHUNKS:
+    {candidate_text}
+
+    Instructions: Analyze which chunks best answer the query. Return the IDs of the relevant chunks in order of relevance (best match first).
+    """
+
+    result = _mistral_call(system_prompt, user_prompt, temperature=0.0)
+    
+    if not result or "ranked_ids" not in result:
+        # Fallback to original order if LLM fails
+        return hits[:top_k]
+
+    ranked_hits = []
+    seen_ids = set()
+    for idx_str in result["ranked_ids"]:
+        try:
+            idx = int(idx_str)
+            if 0 <= idx < len(hits) and idx not in seen_ids:
+                ranked_hits.append(hits[idx])
+                seen_ids.add(idx)
+        except (ValueError, TypeError):
+            continue
+            
+    # If LLM didn't return enough or failed to find relevance, backfill with top semantic matches
+    if len(ranked_hits) < 3:
+        for i, h in enumerate(hits[:top_k]):
+            if i not in seen_ids:
+                ranked_hits.append(h)
+                seen_ids.add(i)
+
+    return ranked_hits[:top_k]
+
+
 def _is_form_like_page(page_md: str) -> bool:
     """Check if page looks like a fillable form. Intentionally permissive."""
     text = page_md or ""
