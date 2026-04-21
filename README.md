@@ -1,4 +1,5 @@
 <div align="center">
+  <img src="frontend/assets/logo.png" alt="Nagrik-AI Logo" width="200" style="border-radius: 15px; margin-bottom: 20px;" />
   <h1>🏛️ Nagrik-AI Document Assistant</h1>
   <p><strong>Empowering Citizens through Intelligent, Accessible Document Guidance</strong></p>
 
@@ -17,6 +18,7 @@ Nagrik-AI is a full-stack, local-first document assistant designed to demystify 
 ## 🚀 Key Features
 
 - **High-Fidelity Contextual Extraction**: Utilizes Mistral OCR to pull structural knowledge and layout features from both modern PDFs and blurry legacy government documents.
+- **Hierarchical Page Indexing (PageIndex)**: Automatically parses extracted documents into a smart semantic tree structure, identifying sections, subsections, and critical form fields to ensure precise, page-aware context mapping during RAG queries.
 - **Dual-Layer RAG Engine**: Infuses global document instructions alongside localized semantic form-field guidance (e.g. Aadhaar references, specific taluka guidance) using ChromaDB vector lookups.
 - **Multilingual Voice Assistance (TTS)**:  Elevenlabs Instant Text-to-Speech synthesis translates parsed technical civic language into accessible spoken Hindi or English summaries directly into the user interface.Fallback method uses gTTS.
 - **Ephemeral Session Memory**: A strict privacy-first pipeline ensures all memory vectors and cached document graphs are thoroughly cleared upon user logout.
@@ -108,5 +110,6 @@ Keep your `.env` securely vaulted and excluded from upstream version control via
 
 ---
 <div align="center">
-  <i>Developed for community enhancement and civic inclusion.</i>
+  <i>Developed for community enhancement and civic inclusion.
+  made with ❤️ by AlgoHolics</i>
 </div>
