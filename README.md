@@ -4,7 +4,7 @@
   <p><strong>Empowering Citizens through Intelligent, Accessible Document Guidance</strong></p>
 
   <p>
-    <a href="https://nagrik-ai-production.up.railway.app/" target="_blank">
+    <a href="https://nagrikai.up.railway.app" target="_blank">
       <img src="https://img.shields.io/badge/🚀_Live_Demo-Try_Nagrik--AI_Now!-0052FF?style=for-the-badge&logo=rocket&logoColor=white&boxShadow=0px_4px_10px_rgba(0,0,0,0.1)" alt="Live Demo Link" />
     </a>
   </p>
