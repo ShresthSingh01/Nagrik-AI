@@ -298,16 +298,11 @@ async def _run_analysis_job(
         audio_name = f"{uuid.uuid4().hex}.mp3"
         audio_path = str(AUDIO_DIR / audio_name)
         audio_url = None
-        audio_url = None
         if not lightweight:
-            try:
-                print(f"[Nagrik] Generating summary audio ({language})...")
-                tts_lang = "hi" if language == "Hindi" else "en"
-                await asyncio.to_thread(text_to_speech, tts_script, audio_path, lang=tts_lang)
-                audio_url = f"/audio/{audio_name}"
-            except Exception as e:
-                logger.error(f"[Nagrik] Background TTS failed: {e}. Analysis will continue without audio.")
-                audio_url = None
+            print(f"[Nagrik] Generating summary audio ({language})...")
+            tts_lang = "hi" if language == "Hindi" else "en"
+            await asyncio.to_thread(text_to_speech, tts_script, audio_path, lang=tts_lang)
+            audio_url = f"/audio/{audio_name}"
 
         # Create dynamic summary
         first_page_purpose = page_results[0].get("document_purpose", "Document") if page_results else "Document"
@@ -539,15 +534,8 @@ async def delete_history_item(job_id: str, current_user: str = Depends(get_curre
 
 def clear_job_data(job_id: str):
     """Deletes files and vectors associated with a job ID."""
-    if not job_id or ".." in job_id or "/" in job_id or "\\" in job_id:
-        print(f"Skipping invalid job_id: {job_id}")
-        return
-
     # 1. Delete ChromaDB vectors
-    try:
-        clear_memory_for_job(job_id)
-    except Exception as e:
-        print(f"Error clearing memory for job {job_id}: {e}")
+    clear_memory_for_job(job_id)
     
     # 2. Delete Result JSON
     job_path = JOBS_DIR / f"{job_id}.json"
@@ -560,14 +548,12 @@ def clear_job_data(job_id: str):
             except: pass
         
         try: os.remove(job_path)
-        except Exception as e:
-            print(f"Error removing job JSON {job_id}: {e}")
+        except: pass
     
     # 3. Cleanup associated audio
-    if AUDIO_DIR.exists():
-        for audio in AUDIO_DIR.glob(f"audio_{job_id}_*.mp3"):
-            try: os.remove(audio)
-            except: pass
+    for audio in AUDIO_DIR.glob(f"audio_{job_id}_*.mp3"):
+        try: os.remove(audio)
+        except: pass
 
 def clear_user_data(user_id: str):
     """Wipes everything. For this prototype, we treat all local history as 'current user data'."""
@@ -583,5 +569,4 @@ def clear_user_data(user_id: str):
 
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8000))
-    uvicorn.run(app, host="0.0.0.0", port=port)
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+ENV/
+.env
+
+# Environments
+.env
+
+# IDEs
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Application Runtime Data
+output/audio/
+output/jobs/
+output/chroma_db/
+
+# Local data overrides
+data/users.json

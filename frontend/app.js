@@ -186,22 +186,11 @@ const I18N = {
     step_label: "Step",
     res_back: "Back",
     page_info_text: "Fill these details on this page",
-    res_footer_back: "Previous Page",
-    res_footer_next: "Next Page",
-    res_footer_replay: "Listen Again",
+    btn_footer_back: "Previous Page",
+    btn_footer_next: "Next Page",
+    btn_footer_replay: "Listen Again",
     hero_tagline: "This form is for government help.",
-    hero_instructions: "Fill the details below correctly. Listen to audio if confused.",
-    // Memory tab
-    nav_memory: "Memory",
-    mem_title: "Document Memory",
-    mem_subtitle: "Search information across all old documents",
-    mem_placeholder: "Search name, address or info...",
-    mem_search: "Search",
-    mem_empty: "Type above to start searching your history.",
-    // Results help
-    res_help_title: "Don't understand?",
-    res_help_sub: "Use 'Listen' buttons above or ask AI below",
-    res_help_btn: "Ask AI"
+    hero_instructions: "Fill the details below correctly. Listen to audio if confused."
   },
   hi: {
     hero_title: "दस्तावेज़ों को समझने में मदद।",
@@ -279,22 +268,11 @@ const I18N = {
     step_label: "स्टेप",
     res_back: "वापस जाएं",
     page_info_text: "इस पेज में आपको ये जानकारी भरनी है",
-    res_footer_back: "पिछला पेज",
-    res_footer_next: "अगला पेज देखें",
-    res_footer_replay: "फिर से सुनें",
+    btn_footer_back: "पिछला पेज",
+    btn_footer_next: "अगला पेज देखें",
+    btn_footer_replay: "फिर से सुनें",
     hero_tagline: "यह फ़ॉर्म सरकारी मदद के लिए है।",
-    hero_instructions: "नीचे दी गई जानकारी सही भरें। समझ न आए तो आवाज़ में सुनें।",
-    // Memory tab
-    nav_memory: "याददाश्त",
-    mem_title: "दस्तावेज़ याददाश्त",
-    mem_subtitle: "पुराने दस्तावेज़ों में जानकारी खोजें",
-    mem_placeholder: "नाम, पता या कोई जानकारी खोजें...",
-    mem_search: "खोजें",
-    mem_empty: "खोज शुरू करने के लिए ऊपर टाइप करें",
-    // Results help
-    res_help_title: "समझ न आए?",
-    res_help_sub: "ऊपर 'सुनें' बटन दबाएं या AI से पूछें",
-    res_help_btn: " AI से पूछें"
+    hero_instructions: "नीचे दी गई जानकारी सही भरें। समझ न आए तो आवाज़ में सुनें।"
   }
 };
 
@@ -314,7 +292,6 @@ function applyLanguage(lang) {
     "nav-home-label": t.nav_home,
     "nav-scan-label": t.nav_scan,
     "nav-history-label": t.nav_history,
-    "nav-memory-label": t.nav_memory,
     "step-1-label-text": t.scan_step_1,
     "step-2-label-text": t.scan_step_2,
     "step-3-label-text": t.scan_step_3,
@@ -337,14 +314,6 @@ function applyLanguage(lang) {
     "history-title-el": t.history_title,
     "history-subtext-el": t.history_subtext,
     "empty-state-text": t.empty_state,
-    "mem-title-el": t.mem_title,
-    "mem-subtitle-el": t.mem_subtitle,
-    "memorySearchInput": t.mem_placeholder,
-    "memorySearchBtn": t.mem_search,
-    "mem-empty-msg": t.mem_empty,
-    "res-ai-ask-title": t.res_help_title,
-    "res-ai-ask-sub": t.res_help_sub,
-    "askAiCtaBtn": t.res_help_btn,
     "askAIToggleBtnText": t.ask_ai_btn,
     "ask-ai-title-el": t.ask_ai_title,
     "ask-ai-welcome-msg": t.ask_ai_welcome,
@@ -355,9 +324,9 @@ function applyLanguage(lang) {
     "level-voice-label": t.level_voice,
     "saveProfileBtn": t.btn_save_start,
     "page-info-text": t.page_info_text,
-    "resFooterBackBtn": t.res_footer_back,
-    "resFooterNextBtn": t.res_footer_next,
-    "resFooterReplayBtn": t.res_footer_replay,
+    "resFooterBackBtn": t.btn_footer_back,
+    "resFooterNextBtn": t.btn_footer_next,
+    "resFooterReplayBtn": t.btn_footer_replay,
     "hero-tagline": t.hero_tagline,
     "hero-instructions": t.hero_instructions,
     "play-btn-text": t.btn_play,
@@ -440,29 +409,20 @@ const Storage = {
   },
   hydrateLists() {
     const items = this.getAll();
-    const lang = localStorage.getItem("nagrik_lang") || "hi";
-    const t = I18N[lang] || I18N.hi;
-
     [recentActivityList, historyList].forEach(list => {
       if (!list) return;
-      
-      list.innerHTML = "";
-      
       if (items.length === 0) {
-        list.innerHTML = `<div class="empty-state" style="padding: 20px; text-align: center; color: #718096;">
-          <div style="font-size: 32px; margin-bottom: 8px;">🎞️</div>
-          <p>${t.empty_state || "No documents yet."}</p>
-        </div>`;
+        // preserve empty state if needed
         return;
       }
-
+      list.innerHTML = "";
       items.forEach(item => {
         const div = document.createElement("div");
         div.className = "activity-item";
         div.innerHTML = `
           <div class="activity-icon">📄</div>
           <div class="activity-info" style="flex:1">
-            <h4>${item.filename || "Untitled"}</h4>
+            <h4>${item.filename}</h4>
             <p>${new Date(item.timestamp).toLocaleDateString()}</p>
           </div>
           <div style="display:flex; gap: 8px;">
@@ -477,7 +437,7 @@ const Storage = {
         };
         div.querySelector('.delete-doc-btn').onclick = async (e) => {
             e.stopPropagation();
-            if (confirm(lang === "hi" ? "दस्तावेज़ हटाना चाहते हैं?" : "Delete document from record?")) {
+            if (confirm("Delete document from record?")) {
                 await deleteHistoryItem(item.job_id, item.id);
             }
         };
@@ -489,32 +449,14 @@ const Storage = {
 
 async function deleteHistoryItem(jobId, storageId) {
   try {
-      console.log(`Deleting document: JobID=${jobId}, StorageID=${storageId}`);
-      
-      // Only call API if jobId is valid
-      if (jobId && jobId !== "undefined") {
-          const res = await fetch(`/api/history/${jobId}`, { 
-              method: "DELETE",
-              headers: getAuthHeader()
-          });
-          if (!res.ok) {
-              console.warn("Backend deletion failed, proceeding with local removal", res.status);
-          }
-      } else {
-          console.warn("No valid JobID found, removing from local storage only.");
-      }
-
+      await fetch(`/api/history/${jobId}`, { 
+          method: "DELETE",
+          headers: getAuthHeader()
+      });
       let items = Storage.getAll();
       items = items.filter(it => it.id !== storageId);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
       Storage.hydrateLists();
-      
-      // If we are currently viewing this document, close the results view
-      if (resultsSection.dataset.currentId === storageId) {
-          resultsSection.hidden = true;
-          document.body.classList.remove("results-active");
-          switchView("home");
-      }
   } catch (err) {
       console.error("Delete failed", err);
   }

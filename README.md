@@ -1,87 +1,112 @@
-# Local Language Civic Document Translator MVP
+<div align="center">
+  <h1>🏛️ Nagrik-AI Document Assistant</h1>
+  <p><strong>Empowering Citizens through Intelligent, Accessible Document Guidance</strong></p>
 
-A beginner-friendly full stack MVP using:
-- Plain HTML / CSS / JavaScript frontend
-- Python FastAPI backend
-- Mistral OCR for document extraction
-- PageIndex-style tree indexing for page-aware retrieval
-- Local civic knowledge base for grounded explanations
-- Optional Mistral chat completion for simplification
-- gTTS for audio output
+  <p>
+    <a href="#-key-features">Key Features</a> •
+    <a href="#-system-architecture">Architecture</a> •
+    <a href="#%EF%B8%8F-tech-stack">Tech Stack</a> •
+    <a href="#-quick-start">Quick Start</a>
+  </p>
+</div>
 
-## Run
+---
 
-### Windows (recommended)
+Nagrik-AI is a full-stack, local-first document assistant designed to demystify complex civic documents. By harnessing the power of **Mistral OCR** and **Local Civic Knowledge Bases**, Nagrik-AI bridges the accessibility gap, converting dense bureaucratic forms into actionable, plain-language audio and text guides for citizens.
 
-From project root:
+## 🚀 Key Features
+
+- **High-Fidelity Contextual Extraction**: Utilizes Mistral OCR to pull structural knowledge and layout features from both modern PDFs and blurry legacy government documents.
+- **Dual-Layer RAG Engine**: Infuses global document instructions alongside localized semantic form-field guidance (e.g. Aadhaar references, specific taluka guidance) using ChromaDB vector lookups.
+- **Multilingual Voice Assistance (TTS)**:  Elevenlabs Instant Text-to-Speech synthesis translates parsed technical civic language into accessible spoken Hindi or English summaries directly into the user interface.Fallback method uses gTTS.
+- **Ephemeral Session Memory**: A strict privacy-first pipeline ensures all memory vectors and cached document graphs are thoroughly cleared upon user logout.
+
+## 🧠 System Architecture
+
+The project maintains a sharp detachment between its rapid interactive frontend and its asynchronous Python AI pipelines. 
+
+> [!NOTE]
+> For an in-depth view of the system design regarding Vector Embeddings, Background Workflows, and Data Persistence, please refer to the **[Architecture Documentation Here](file:Nagrik-AI/ARCHITECTURE.md)**.
+
+### High-Level Flow
+1. **User Input** flows from the frontend interface to a FastAPI asynchronous endpoint.
+2. Background tasks trigger **OCR Parsing**. 
+3. Parsed fragments invoke **ChromaDB Queries** to apply civic knowledge via **RAG (Retrieval-Augmented Generation)**.
+4. Clean results are sent through the **LLM Pipeline**, converting them into simplified language context.
+5. Voice summaries are synthesized via the **TTS module**.
+
+## 🛠️ Tech Stack
+
+### Client Layer
+* **HTML5 / CSS3 / JavaScript (Vanilla)**: High-performance, lightweight asset delivery with modern glassmorphic implementations.
+
+### Service Layer 
+* **[FastAPI](https://fastapi.tiangolo.com/)**: Asynchronous Python micro-framework routing job states across threadpools.
+* **[Uvicorn](https://www.uvicorn.org/)**: Blazing-fast ASGI web server implementation.
+
+### AI & Intelligence
+* **Mistral AI**: State-of-the-art inference engine managing OCR extraction and prompt parsing.
+* **[ChromaDB](https://www.trychroma.com/)**: Embedded vector search handling persistent and ephemeral user semantic mapping.
+* **[ElevenLabs](https://elevenlabs.io/)**: Instant Text-to-Speech synthesis for high-quality voice generation.
+* **[gTTS](https://gtts.readthedocs.io/en/latest/)**: Google Text-to-Speech library localized for Indic language context outputs.
+
+---
+
+## ⚡ Quick Start
+
+### Prerequisites
+- Python `3.10+` minimum.
+- A functional Mistral AI API key (add to `.env` or run the setup routine).
+
+### 1️⃣ Launch via Bootstrapper (Recommended for Windows)
+
+The easiest way to initialize the application is through the bundled PowerShell bootstrapper. It sets up your virtual environment, grabs dependencies, securely handles templates, and boots hot-reloading:
 
 ```powershell
 ./scripts/start_server.ps1
 ```
 
-This script will:
-1. Create `.venv` if missing
-2. Install/upgrade dependencies from `backend/requirements.txt`
-3. Create `.env` from `.env.example` if missing
-4. Start FastAPI with Uvicorn
+### 2️⃣ Manual Setup
 
-Alternative launcher:
-
-```bat
-start-server.bat
-```
-
-Useful options:
-
-```powershell
-# Skip dependency install
-./scripts/start_server.ps1 -SkipInstall
-
-# Disable reload mode
-./scripts/start_server.ps1 -NoReload
-
-# Custom port
-./scripts/start_server.ps1 -Port 8080
-
-# Custom host binding
-./scripts/start_server.ps1 -BindHost 0.0.0.0 -Port 8000
-```
-
-Open `http://127.0.0.1:8000`.
-
-### Manual setup (all platforms)
+If you prefer building the environment natively without bootstrapping:
 
 ```bash
+# 1. Create and source a Virtual Environment
 python -m venv .venv
+source .venv/bin/activate  # via PS: .\.venv\Scripts\Activate.ps1
 
-# Windows PowerShell
-.\.venv\Scripts\Activate.ps1
-
-# macOS/Linux
-# source .venv/bin/activate
-
+# 2. Bind application requirements
 pip install -r backend/requirements.txt
+
+# 3. Environment Config Injection
 cp .env.example .env
+# Open `.env` and assign your Mistral configuration.
+
+# 4. Initiate Server
 python -m uvicorn backend.main:app --reload
 ```
+View the graphical interface instantly on `http://127.0.0.1:8000`.
 
-## Notes
-- Upload a PDF or image.
-- The app uploads the file to Mistral Files API with `purpose=ocr`, then calls OCR.
-- The OCR response is turned into a page-aware tree index, then relevant civic guidance is retrieved and simplified.
-- If the chat model is not configured, the app still returns a deterministic fallback explanation.
+## 📂 Project Structure
 
-## Environment
-
-Create a `.env` file in the project root with values like:
-
-```env
-MISTRAL_API_KEY=your_key_here
-MISTRAL_BASE_URL=https://api.mistral.ai/v1
-MISTRAL_OCR_MODEL=mistral-ocr-latest
-MISTRAL_CHAT_MODEL=mistral-small-latest
-MAX_CONTEXT_NODES=3
-MAX_GUIDELINE_HITS=3
-TTS_LANGUAGE=en
-ELEVENLABS_API_KEY=
+```text
+Nagrik-AI/
+├── backend/          # Edge-facing logic, RAG ingestion pipelines, Vector logic
+├── frontend/         # Responsive glassmorphic GUI & State Management Hooks
+├── data/             # Static Civic Rulesets and Auth Schemas
+├── output/           # (Volatile) Ephemeral Storage for Job Context / Generated Audio
+├── scripts/          # Server Bootstrap & Environment Utility Scripts
+└── ARCHITECTURE.md   # Advanced systemic sequence mappings and dataflow outlines
 ```
+
+## 🔒 Security Posture
+
+Nagrik-AI champions right-to-privacy rulesets. 
+No persistent identity tracking takes flight beyond isolated JSON memory allocations. Session bounds explicitly clear **ChromaDB Vector embeddings**, **Audio mp3 footprints**, and **Task Context JSONs** whenever the `/api/auth/logout` endpoint is invoked. 
+
+Keep your `.env` securely vaulted and excluded from upstream version control via `.gitignore`. 
+
+---
+<div align="center">
+  <i>Developed for community enhancement and civic inclusion.</i>
+</div>

@@ -1,0 +1,26 @@
+# Git and Virtual Environments
+.git/
+.gitignore
+.venv/
+env/
+venv/
+
+# Environment Variables (Never ship API keys into a Docker image!)
+.env
+.env.local
+
+# Python Cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Local Processed Outputs & Large Vector Files
+# We ignore output so that local tests and vector DBs aren't packaged into the initial stateless image
+output/
