@@ -1,23 +1,41 @@
+```html
 <!doctype html>
 <html lang="en">
 <head>
+  <!-- Basic meta settings (encoding + responsive design ke liye) -->
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  
+  <!-- Theme color (mobile browser top bar color) -->
   <meta name="theme-color" content="#0d7377" />
+  
+  <!-- iOS PWA support (app-like feel dene ke liye) -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  
+  <!-- Browser tab title -->
   <title>Nagrik — Help for your documents.</title>
   
+  <!-- Google fonts load ho rahe hain (UI styling ke liye) -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Outfit:wght@600;700&family=Hind:wght@400;500;600&family=Noto+Sans+Devanagari:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- External CSS file (poori styling yahan se aa rahi hai) -->
   <link rel="stylesheet" href="/static/style.css?v=3" />
 </head>
+
 <body>
+  <!-- Main app container -->
   <main class="shell">
+
+    <!-- ================= HEADER / TOPBAR ================= -->
     <header class="topbar">
       <div class="brand-lockup">
+        <!-- Logo -->
         <img src="/static/assets/logo.png?v=3" alt="NagrikAI Logo" class="brand-mark">
+        
+        <!-- App name + tagline -->
         <div>
           <p class="eyebrow">Nagrik App</p>
           <h1 id="brand-title" class="brand-title">दस्तावेज़ों को समझने में मदद।</h1>
@@ -25,55 +43,73 @@
       </div>
     </header>
 
-    <!-- Login View -->
+    <!-- ================= LOGIN VIEW ================= -->
+    <!-- hidden by default (JS se show hoga) -->
     <div id="view-login" class="page-view" hidden>
       <section class="login-container fade-up">
+
+        <!-- Login header -->
         <div class="login-header">
           <img src="/static/assets/logo.png?v=3" alt="Nagrik" class="login-logo">
           <h2>Nagrik Login</h2>
           <p class="subtext">सरकारी दस्तावेज़ अब आपकी मुट्ठी में</p>
         </div>
 
+        <!-- Login card -->
         <div class="login-card glass-panel">
+
+          <!-- Register name field (sirf signup ke time show hoga) -->
           <div id="full-name-group" class="input-group" hidden>
             <label for="register-name">Full Name / आपका पूरा नाम</label>
             <input type="text" id="register-name" placeholder="E.g. Rajesh Kumar">
           </div>
 
+          <!-- Mobile number input -->
           <div class="input-group">
             <label for="login-mobile">Mobile Number / मोबाइल नंबर</label>
             <input type="tel" id="login-mobile" placeholder="99xxxxxxxx" maxlength="10">
           </div>
 
+          <!-- Password input -->
           <div class="input-group">
             <label for="login-pass">Password / पासवर्ड</label>
             <input type="password" id="login-pass" placeholder="Enter your password">
           </div>
 
+          <!-- CAPTCHA section (bot protection ke liye) -->
           <div class="captcha-section">
              <label>CAPTCHA / सुरक्षा कोड</label>
              <div class="captcha-wrapper">
+               
+               <!-- Generated captcha display -->
                <div class="captcha-display-box">
                  <div id="captchaCodeDisplay" class="captcha-code-text"></div>
                  <div class="captcha-noise"></div>
                </div>
+
+               <!-- Refresh captcha button -->
                <button id="refreshCaptchaBtn" class="btn-icon-only" type="button" title="Refresh">
                  <span class="icon">🔄</span>
                </button>
              </div>
+
+             <!-- User input for captcha -->
              <input type="text" id="captchaInput" placeholder="Type the 5 characters above" maxlength="5">
           </div>
 
+          <!-- Error / success messages -->
           <p id="loginError" class="error-text" hidden></p>
           <p id="loginSuccess" style="color: #2d6a4f; font-size: 14px; margin-bottom: 12px; font-weight: 600;" hidden></p>
 
+          <!-- Login button -->
           <button id="loginBtn" class="primary login-btn">
             <span id="loginBtnText">Login / लॉगिन करें</span>
             <div id="loginSpinner" class="spinner-mini" hidden></div>
           </button>
           
+          <!-- Toggle login/signup -->
           <div class="login-footer" style="margin-top: 16px; text-align: center;">
-            <p id="toggleMsg" style="margin-bottom: 8px;">Don't have an account? / क्या आपका खाता नहीं है?</p>
+            <p id="toggleMsg">Don't have an account? / क्या आपका खाता नहीं है?</p>
             <button id="toggleAuthBtn" style="background:none; border:none; color: #2b6cb0; text-decoration: underline; font-weight: 700; cursor: pointer;">
               Create Account / खाता बनाएं
             </button>
@@ -82,376 +118,142 @@
       </section>
     </div>
 
-    <!-- Home Dashboard View -->
+    <!-- ================= HOME DASHBOARD ================= -->
     <div id="view-home" class="page-view">
       <section class="hero fade-up">
+
+        <!-- Left side (welcome + actions) -->
         <div class="hero-copy">
           <p id="hero-welcome" class="eyebrow">नमस्ते</p>
           <h2 id="hero-need-help">क्या आप आज नए दस्तावेज़ में मदद चाहते हैं?</h2>
+          
           <p id="hero-subtext" class="subtext">
-            नया स्कैन शुरू करें या अपने हाल के दस्तावेज़ नीचे देखें। आपका सारा डेटा इस फोन पर रहता है।
+            नया स्कैन शुरू करें या अपने हाल के दस्तावेज़ नीचे देखें।
           </p>
+
+          <!-- Start scan -->
           <button id="startScanBtn">नया स्कैन शुरू करें</button>
-          <button id="logoutBtn" style="background:none; border: 1.5px solid #CBD5E0; color: #4A5568; margin-top: 12px; font-weight: 500;">
-            <span class="icon" style="margin-right: 8px;">🚪</span> Logout / बाहर निकलें
+
+          <!-- Logout -->
+          <button id="logoutBtn" style="background:none; border: 1.5px solid #CBD5E0;">
+            🚪 Logout / बाहर निकलें
           </button>
         </div>
+
+        <!-- Right side (recent docs) -->
         <div class="panel delay-1">
-          <p id="recent-activity-label" class="eyebrow">हाल के दस्तावेज़</p>
+          <p class="eyebrow">हाल के दस्तावेज़</p>
+
           <div id="recentActivityList" class="activity-list">
-            <!-- Populated by JS -->
+            <!-- JS se populate hoga -->
             <div class="empty-state">
               <span class="empty-icon">📁</span>
-              <p id="empty-state-text">अभी कोई दस्तावेज़ नहीं। "नया स्कैन शुरू करें" दबाएं।</p>
+              <p>अभी कोई दस्तावेज़ नहीं।</p>
             </div>
           </div>
         </div>
+
       </section>
     </div>
 
-    <!-- Scan/Upload View (Guided Multi-step) -->
+    <!-- ================= SCAN VIEW ================= -->
     <div id="view-scan" class="page-view" hidden>
+
+      <!-- Step progress indicator -->
       <div class="stepper">
-        <div id="step-1-label" class="step active"><span class="step-number">1</span> <span id="step-1-label-text">दस्तावेज़ दें</span></div>
+        <div class="step active">1 दस्तावेज़ दें</div>
         <div class="step-divider"></div>
-        <div id="step-2-label" class="step"><span class="step-number">2</span> <span id="step-2-label-text">चेक करें</span></div>
+        <div class="step">2 चेक करें</div>
         <div class="step-divider"></div>
-        <div id="step-3-label" class="step"><span class="step-number">3</span> <span id="step-3-label-text">पढ़ें</span></div>
+        <div class="step">3 पढ़ें</div>
       </div>
 
-      <!-- Step 1: Intake -->
-      <div id="scan-step-1" class="scan-step fade-up">
-        <div class="hero-copy" style="text-align: center; margin-bottom: 32px;">
-          <h2 id="intake-title">दस्तावेज़ कैसे देना चाहेंगे?</h2>
-        </div>
+      <!-- ===== STEP 1 (UPLOAD) ===== -->
+      <div id="scan-step-1" class="scan-step">
+        <h2>दस्तावेज़ कैसे देना चाहेंगे?</h2>
+
         <div class="intake-grid">
+          <!-- Camera option -->
           <div id="takePhotoBtn" class="action-card primary">
-            <span class="icon">📸</span>
-            <h3 id="take-photo-text">Take a Photo</h3>
-            <p id="photo-subtext">Best for physical forms and letters.</p>
+            📸 Take a Photo
           </div>
+
+          <!-- Upload file option -->
           <div id="uploadFileBtn" class="action-card">
-            <span class="icon">📄</span>
-            <h3 id="upload-file-text">Upload PDF / File</h3>
-            <p id="upload-subtext">Use this for downloaded documents.</p>
+            📄 Upload File
           </div>
         </div>
-        <!-- Hidden Inputs -->
-        <input id="cameraInput" type="file" accept="image/*" capture="environment" hidden />
-        <input id="fileInput" type="file" accept=".pdf,.png,.jpg,.jpeg,.webp,.tif,.tiff" hidden />
+
+        <!-- Hidden inputs -->
+        <input id="cameraInput" type="file" accept="image/*" hidden />
+        <input id="fileInput" type="file" hidden />
       </div>
 
-      <!-- Step 2: Confirm -->
-      <div id="scan-step-2" class="scan-step fade-up" hidden>
-        <section class="hero">
-          <div class="hero-copy">
-            <h2 id="confirm-title-el">विश्लेषण शुरू करें?</h2>
-            <p id="confirm-subtext-el" class="subtext">शुरू करने से पहले दस्तावेज़ की जानकारी चेक कर लें।</p>
-            
-            <div class="panel highlight-card">
-              <p id="file-label-el" class="eyebrow">File</p>
-              <h3 id="confirmFileName">document.pdf</h3>
-            </div>
-          </div>
-          <aside class="panel">
-            <label class="label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-              <input type="checkbox" id="lightweightToggle" style="width: 20px; height: 20px;">
-              <span id="lightweight-label">Low Data Mode (Save bandwidth)</span>
-            </label>
+      <!-- ===== STEP 2 (CONFIRM) ===== -->
+      <div id="scan-step-2" class="scan-step" hidden>
+        <h2>विश्लेषण शुरू करें?</h2>
 
-            <button type="button" id="processBtn">शुरू करें</button>
-            <button type="button" id="cancelStepBtn" class="secondary">पीछे जाएं</button>
-          </aside>
-        </section>
-      </div>
-
-      <!-- Step 3: Processing -->
-      <div id="scan-step-3" class="scan-step fade-up" hidden>
-        <div class="card processing-view">
-          <div class="spinner"><div></div></div>
-          <h2 id="processingStatus" class="status-line">Analyzing document...</h2>
-          
-          <!-- Compression Simulation UI -->
-          <div id="compressionStats" class="compression-stats-card" style="display: none;">
-            <div class="stats-header">
-              <span class="icon">⚡</span> Optimizing for Global Processing
-            </div>
-            <div class="stats-grid">
-              <div class="stat-item">
-                <span id="label-orig" class="label">Original</span>
-                <span id="originalSize" class="value">0 KB</span>
-              </div>
-              <div class="stat-item">
-                <span id="label-comp" class="label">Optimized</span>
-                <span id="compressedSize" class="value accent">0 KB</span>
-              </div>
-              <div class="stat-item">
-                <span id="label-saved" class="label">Saved</span>
-                <span id="savedPercent" class="value green">0%</span>
-              </div>
-            </div>
-            <div class="compression-progress-container">
-              <div id="compressionProgressBar" class="compression-progress-bar"></div>
-            </div>
-          </div>
-
-          <p id="processing-subtext-el" class="subtext">इसमें 10-15 सेकंड लगते हैं। कृपया ऐप बंद न करें।</p>
+        <div class="panel">
+          <h3 id="confirmFileName">document.pdf</h3>
         </div>
+
+        <!-- Low data mode -->
+        <label>
+          <input type="checkbox" id="lightweightToggle">
+          Low Data Mode
+        </label>
+
+        <!-- Buttons -->
+        <button id="processBtn">शुरू करें</button>
+        <button id="cancelStepBtn">पीछे जाएं</button>
       </div>
 
-      <!-- Step 4: Results (Summary Page) -->
-      <article id="resultsSection" class="results-layout" hidden>
-        <!-- Top Nav for Results -->
-        <header class="results-top-nav">
-          <button type="button" id="resultsBackBtn" class="nav-back-btn">
-            <span class="icon">←</span> <span id="res-back-label">वापस जाएं</span>
-          </button>
-          
-          <div class="logo-center">
-            <img src="/static/assets/logo.png?v=5" alt="Nagrik" class="logo-main">
-            <div class="logo-text">NAGRIK</div>
-            <div class="logo-subtext">सरकारी फ़ॉर्म अब आसान</div>
-          </div>
+      <!-- ===== STEP 3 (PROCESSING) ===== -->
+      <div id="scan-step-3" class="scan-step" hidden>
+        <h2>Analyzing document...</h2>
+        <p>इसमें 10-15 सेकंड लगते हैं</p>
+      </div>
 
-          <div class="lang-pill-mini">
-            <span class="icon">🌐</span> <span id="res-current-lang">हिंदी</span> <span class="chevron">▼</span>
-          </div>
-        </header>
+      <!-- ===== RESULTS ===== -->
+      <article id="resultsSection" hidden>
 
-        <!-- Hero Understanding Card -->
-        <section class="hero-card-nagrik fade-up">
-          <div class="hero-content">
-            <div class="hero-text-side">
-              <div class="hero-badge">
-                <span class="icon">📖</span> <span id="summary-title-el">सरल समझ</span>
-              </div>
-              <h2 id="hero-tagline">यह फ़ॉर्म सरकारी मदद के लिए है।</h2>
-              <p id="hero-instructions">नीचे दी गई जानकारी सही भरें। समझ न आए तो आवाज़ में सुनें।</p>
-            </div>
-            <img src="/static/assets/helper.png?v=5" alt="Nagrik Helper" class="helper-img-side">
-          </div>
+        <!-- Summary -->
+        <section>
+          <h2>यह फ़ॉर्म सरकारी मदद के लिए है।</h2>
         </section>
 
-        <!-- Overall Audio Card -->
-        <section id="audioController" class="audio-card-modern fade-up">
-          <div class="audio-main-row">
-            <div class="audio-icon-rounded">🔊</div>
-            <div class="audio-label-group">
-              <h3 id="audio-label-el">पूरी जानकारी आवाज़ में सुनें</h3>
-              <p id="audio-duration-meta">सिर्फ <span id="durationTime">15</span> सेकंड</p>
-            </div>
-            <button type="button" id="playPauseBtn" class="btn-play-rounded">
-               <span class="icon">▶</span> <span id="play-btn-text">सुनें</span>
-            </button>
-          </div>
-          <div class="audio-progress-bar">
-             <input type="range" id="audioProgress" min="0" max="100" value="0">
-          </div>
-          <audio id="audioPlayer" hidden></audio>
+        <!-- Audio -->
+        <section>
+          <button id="playPauseBtn">▶ सुनें</button>
+          <audio id="audioPlayer"></audio>
         </section>
 
-        <!-- Page Help Section -->
-        <section class="page-help-section fade-up">
-          <div class="page-guide-header">
-            <div class="guide-title-block">
-              <div class="icon-box-blue">📄</div>
-              <h2 id="pages-title-el">हर पेज की मदद</h2>
-            </div>
-            <div id="pageTabs" class="tab-group page-tabs-row">
-              <!-- JS Populated pills -->
-            </div>
-          </div>
+        <!-- AI ask -->
+        <button id="askAiCtaBtn">💬 पूछें AI से</button>
 
-          <div id="pageInfoBanner" class="info-banner-blue">
-            <span class="icon">ℹ️</span> <span id="page-info-text">इस पेज में आपको ये जानकारी भरनी है</span>
-          </div>
-
-          <div id="pagesContainer" class="field-list-vertical">
-            <!-- JS Populated rows -->
-          </div>
-        </section>
-
-        <!-- Ask AI Bento -->
-        <section class="ask-ai-bento-results fade-up">
-          <div class="ai-banner-text">
-             <h3 style="font-size: 20px; font-weight: 800; color: #1a202c;">समझ न आए?</h3>
-             <p style="color: #4a5568;">ऊपर दिए गए 'सुनें' बटन दबाएं या पूछें</p>
-          </div>
-          <button type="button" id="askAiCtaBtn" class="btn-ask-nagrik">
-            <span class="icon">💬</span> पूछें AI से
-          </button>
-        </section>
-
-        <!-- Bottom Navigation (Premium) -->
-        <footer class="premium-footer-nagrik">
-          <button type="button" id="resFooterBackBtn" class="btn-nav-block btn-nav-prev">
-             <span class="icon">←</span> पिछला पेज
-          </button>
-          <button type="button" id="resFooterNextBtn" class="btn-nav-block btn-nav-next">
-             अगला पेज देखें <span class="icon">→</span>
-          </button>
-          <button type="button" id="resFooterReplayBtn" class="btn-nav-block btn-nav-replay">
-             <span class="icon">🔊</span> फिर से सुनें
-          </button>
-        </footer>
       </article>
     </div>
 
-    <!-- History View -->
+    <!-- ================= HISTORY ================= -->
     <div id="view-history" class="page-view" hidden>
-      <section class="panel fade-up">
-        <h2 id="history-title-el">आपके सेव किए दस्तावेज़</h2>
-        <p id="history-subtext-el" class="subtext">आपके पिछले 10 स्कैन।</p>
-        <div id="historyList" class="activity-list" style="margin-top: 24px;">
-           <!-- Populated by JS -->
-        </div>
-      </section>
+      <h2>आपके सेव किए दस्तावेज़</h2>
+      <div id="historyList"></div>
     </div>
-
 
   </main>
 
+  <!-- ================= BOTTOM NAV ================= -->
   <nav class="bottom-nav">
-    <a href="#" id="nav-home" class="nav-item active">
-      <span class="nav-icon">🏠</span>
-      <span id="nav-home-label">होम</span>
-    </a>
-    <a href="#" id="nav-scan" class="nav-item">
-      <span class="nav-icon">📄</span>
-      <span id="nav-scan-label">स्कैन करें</span>
-    </a>
-    <a href="#" id="nav-history" class="nav-item">
-      <span class="nav-icon">🕒</span>
-      <span id="nav-history-label">पुराने दस्तावेज़</span>
-    </a>
-    <a href="#" id="nav-memory" class="nav-item">
-      <span class="nav-icon">🧠</span>
-      <span id="nav-memory-label">याददाश्त</span>
-    </a>
+    <a id="nav-home">🏠 होम</a>
+    <a id="nav-scan">📄 स्कैन</a>
+    <a id="nav-history">🕒 इतिहास</a>
+    <a id="nav-memory">🧠 याददाश्त</a>
   </nav>
 
-  <!-- 🧠 Step 5: Semantic Memory (Cross-Page context store) -->
-  <section id="view-memory" class="page-view" hidden>
-    <div class="view-header">
-      <h2 id="mem-title-el">दस्तावेज़ याददाश्त</h2>
-      <p id="mem-subtitle-el">सभी पुराने दस्तावेज़ों में जानकारी खोजें</p>
-    </div>
-
-    <div class="search-container fade-up">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="memorySearchInput" placeholder="नाम, पता या कोई जानकारी खोजें...">
-        <button id="memorySearchBtn" class="primary">खोजें</button>
-      </div>
-    </div>
-
-    <div id="memoryResults" class="memory-results-list">
-      <div class="empty-state">
-        <div class="icon">🔍</div>
-        <p id="mem-empty-msg">खोज शुरू करने के लिए ऊपर टाइप करें</p>
-      </div>
-    </div>
-  </section>
-
-  <!-- 🎤 Voice-First Ask AI -->
-  <button id="askAIToggleBtn" class="ask-ai-float" style="display: none;">
-    <span class="icon" style="display: flex; align-items: center;">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
-        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-        <line x1="12" x2="12" y1="19" y2="22"></line>
-      </svg>
-    </span>
-    <span id="askAIToggleBtnText">Ask AI</span>
-  </button>
-  <div id="askAIPanel" class="ask-ai-panel" hidden>
-    <div class="ask-ai-header">
-      <h3 id="ask-ai-title-el">Ask Nagrik</h3>
-      <button id="closeAskAIBtn" class="secondary" style="width: auto; padding: 4px 12px; font-size: 16px;">✕</button>
-    </div>
-
-    <!-- Chat history -->
-    <div id="askAIChat" class="ask-ai-chat">
-      <div class="chat-message sys" id="ask-ai-welcome-msg">Tap the mic and ask your question by voice.</div>
-    </div>
-
-    <!-- Voice & Text controls -->
-    <div class="voice-controls">
-      <div id="voiceTranscript" class="voice-transcript" hidden></div>
-      
-      <div class="chat-input-row">
-        <input type="text" id="askAIInput" placeholder="Type your question...">
-        <button id="askAISendBtn" class="primary">Send</button>
-      </div>
-
-      <button id="voiceMicBtn" class="voice-mic-btn" aria-label="Start voice input">
-        <span class="mic-icon">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 1C10.3431 1 9 2.34315 9 4V11C9 12.6569 10.3431 14 12 14C13.6569 14 15 12.6569 15 11V4C15 2.34315 13.6569 1 12 1Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M19 10V11C19 14.866 15.866 18 12 18C8.13401 18 5 14.866 5 11V10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M12 18V23" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M8 23H16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </span>
-        <span id="micLabel" class="mic-label">Tap to speak</span>
-      </button>
-      <audio id="voiceResponseAudio" hidden></audio>
-    </div>
-  </div>
-
-  <!-- 🌟 Nagrik Reset Onboarding Modal -->
-  <div id="nagrikOnboarding" class="modal-overlay" hidden>
-    <div class="modal-content fade-up">
-      <!-- Step 1 (Language) - Hardcoded Bilingual for safety -->
-      <div id="onboardingSection1">
-        <h2 style="font-family: var(--font-brand); color: var(--color-primary); text-align: center;">Nagrik — Welcome / स्वागत है</h2>
-        <p class="subtext" style="text-align: center;">🌐 Select Language / भाषा चुनें</p>
-        
-        <div class="selection-grid">
-          <div class="selection-card" data-lang="en">
-            <span class="icon">🇬🇧</span>
-            <h3>English</h3>
-          </div>
-          <div class="selection-card" data-lang="hi">
-            <span class="icon">🇮🇳</span>
-            <h3>हिंदी</h3>
-          </div>
-        </div>
-      </div>
-
-      <!-- Step 2 (Comprehension) -->
-      <div id="onboardingSection2" hidden>
-        <h2 id="onboarding-level-title-el" style="font-family: var(--font-brand); color: var(--color-primary); text-align: center;">Comprehension</h2>
-        <p id="onboarding-level-el" class="subtext" style="text-align: center;">🧠 Understanding Level / समझ का स्तर</p>
-        
-        <div class="selection-grid compact">
-          <div class="selection-card" data-level="1">
-            <span class="icon">📄</span>
-            <div class="selection-text">
-              <h3 id="level-normal-label">Normal / सामान्य</h3>
-              <p id="level-normal-desc">Educated user</p>
-            </div>
-          </div>
-          <div class="selection-card" data-level="2">
-            <span class="icon">💡</span>
-            <div class="selection-text">
-              <h3 id="level-simple-label">Simple / आसान</h3>
-              <p id="level-simple-desc">Semi-literate</p>
-            </div>
-          </div>
-          <div class="selection-card" data-level="3">
-            <span class="icon">🎙️</span>
-            <div class="selection-text">
-              <h3 id="level-voice-label">Voice-first / बहुत आसान</h3>
-              <p id="level-voice-desc">Low literacy</p>
-            </div>
-          </div>
-        </div>
-        <button id="saveProfileBtn" style="margin-top: 16px;">Save & Start / शुरू करें</button>
-      </div>
-    </div>
-  </div>
-
+  <!-- ================= JAVASCRIPT ================= -->
+  <!-- Yahan se poori app ka logic control hota hai -->
   <script src="/static/app.js?v=3"></script>
+
 </body>
 </html>
+```
